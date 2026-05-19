@@ -15,18 +15,41 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ─── NEON (PostgreSQL) ────────────────────────────────────────────
 try:
-    import psycopg2
-    _PSYCOPG2_OK = True
+    import pg8000.native as _pg8000
+    _PG8000_OK = True
 except ImportError:
-    _PSYCOPG2_OK = False
+    _PG8000_OK = False
+
+# Keep _PSYCOPG2_OK alias so debug endpoint still works
+_PSYCOPG2_OK = _PG8000_OK
+
+def _parse_db_url(url):
+    """Parse postgresql://user:pass@host/dbname into dict."""
+    import urllib.parse
+    p = urllib.parse.urlparse(url)
+    return {
+        "user": p.username,
+        "password": p.password,
+        "host": p.hostname,
+        "port": p.port or 5432,
+        "database": p.path.lstrip("/"),
+    }
 
 def _neon_conn():
-    """Devolve uma conexão Neon, ou None se DATABASE_URL não estiver definido."""
+    """Devolve uma conexão Neon (pg8000), ou None se indisponível."""
     db_url = os.environ.get("DATABASE_URL")
-    if not db_url or not _PSYCOPG2_OK:
+    if not db_url or not _PG8000_OK:
         return None
     try:
-        return psycopg2.connect(db_url, sslmode="require")
+        params = _parse_db_url(db_url)
+        return _pg8000.Connection(
+            params["user"],
+            password=params["password"],
+            host=params["host"],
+            port=params["port"],
+            database=params["database"],
+            ssl_context=True,
+        )
     except Exception as e:
         print(f"⚠️  Neon: erro de conexão — {e}")
         return None
@@ -37,15 +60,13 @@ def neon_init():
     if not conn:
         return
     try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS kv_store (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL,
-                    updated_at TIMESTAMP DEFAULT NOW()
-                )
-            """)
-        conn.commit()
+        conn.run("""
+            CREATE TABLE IF NOT EXISTS kv_store (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
         print("✅ Neon: tabela kv_store pronta")
     except Exception as e:
         print(f"⚠️  Neon init: {e}")
@@ -59,14 +80,12 @@ def neon_save(key: str, data):
         return False
     try:
         payload = json.dumps(data, ensure_ascii=False)
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO kv_store (key, value, updated_at)
-                VALUES (%s, %s, NOW())
-                ON CONFLICT (key) DO UPDATE
-                    SET value = EXCLUDED.value, updated_at = NOW()
-            """, (key, payload))
-        conn.commit()
+        conn.run("""
+            INSERT INTO kv_store (key, value, updated_at)
+            VALUES (:key, :value, NOW())
+            ON CONFLICT (key) DO UPDATE
+                SET value = EXCLUDED.value, updated_at = NOW()
+        """, key=key, value=payload)
         print(f"✅ Neon: '{key}' guardado ({len(payload)//1024} KB)")
         return True
     except Exception as e:
@@ -81,13 +100,10 @@ def neon_load(key: str):
     if not conn:
         return None
     try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT value FROM kv_store WHERE key = %s", (key,))
-            row = cur.fetchone()
-        if not row:
+        rows = conn.run("SELECT value FROM kv_store WHERE key = :key", key=key)
+        if not rows:
             return None
-        val = row[0]
-        # JSONB columns are already deserialized by psycopg2; TEXT columns need json.loads
+        val = rows[0][0]
         if isinstance(val, (dict, list)):
             return val
         return json.loads(val)
@@ -645,9 +661,7 @@ def api_crm_debug():
     try:
         conn = _neon_conn()
         if conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT key, octet_length(value::text) FROM kv_store")
-                rows = cur.fetchall()
+            rows = conn.run("SELECT key, octet_length(value) FROM kv_store")
             conn.close()
             result["neon_test"] = {r[0]: f"{r[1]//1024} KB" for r in rows}
         else:
