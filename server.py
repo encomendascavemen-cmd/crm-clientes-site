@@ -645,6 +645,15 @@ def api_crm_refresh():
 def api_crm_status():
     return jsonify(_crm_refresh_status)
 
+@app.route("/api/crm/reload")
+def api_crm_reload():
+    """Recarrega dados do Neon para memória sem correr crm_clientes.py."""
+    try:
+        load_crm_data()
+        return jsonify({"ok": True, "count": len(_crm_customers)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 @app.route("/api/crm/debug")
 def api_crm_debug():
     """Debug endpoint: testa ligação ao Neon e devolve estado."""
