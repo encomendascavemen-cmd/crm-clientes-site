@@ -225,6 +225,7 @@ thead th.sorted{color:var(--gold);}
   <div class="tab-nav">
     <button class="tab-btn active" id="tab-btn-clientes" onclick="switchTab('clientes',this)">👥 Clientes</button>
     <button class="tab-btn" id="tab-btn-rfv" onclick="switchTab('rfv',this)">📊 Matriz RFV</button>
+    <button class="tab-btn" id="tab-btn-pontos" onclick="switchTab('pontos',this)">🏆 Pontos</button>
   </div>
 </header>
 
@@ -455,6 +456,44 @@ thead th.sorted{color:var(--gold);}
 
 </div><!-- /tab-rfv -->
 
+<!-- ═══════════════════════════════════════════════ TAB: PONTOS ═══ -->
+<div id="tab-pontos" style="display:none">
+
+<div class="stats-4" id="pontos-stats">
+  <div class="stat"><div class="stat-l">Clientes com pontos</div><div class="stat-v" id="pontos-s-total">…</div><div class="stat-s">saldo positivo</div></div>
+  <div class="stat"><div class="stat-l">Pontos em circulação</div><div class="stat-v" id="pontos-s-balance">…</div><div class="stat-s">total disponível</div></div>
+  <div class="stat"><div class="stat-l">Média por cliente</div><div class="stat-v" id="pontos-s-avg">…</div><div class="stat-s">pontos disponíveis</div></div>
+  <div class="stat"><div class="stat-l">Total pontos ganhos</div><div class="stat-v" id="pontos-s-earned">…</div><div class="stat-s">histórico acumulado</div></div>
+</div>
+
+<div class="controls">
+  <div class="search"><input type="text" id="pontosSearch" placeholder="Pesquisar por nome ou email…" oninput="pontosApplyFilter()"></div>
+  <span class="cnt" id="pontos-cnt">A carregar…</span>
+</div>
+
+<div class="tbl-wrap">
+  <div id="pontos-loadingMsg" style="text-align:center;padding:60px;color:var(--muted);">
+    <div class="spin" style="font-size:2rem">⟳</div>
+    <div style="margin-top:12px;font-size:.9rem">A carregar pontos…</div>
+  </div>
+  <table id="pontos-tbl" style="display:none">
+    <thead><tr>
+      <th onclick="pontosSortTbl(0)">#</th>
+      <th onclick="pontosSortTbl(1)">Cliente</th>
+      <th onclick="pontosSortTbl(2)" class="sorted" id="pontos-th-balance">Pontos Disponíveis ↓</th>
+      <th onclick="pontosSortTbl(3)">Pontos Ganhos</th>
+      <th onclick="pontosSortTbl(4)">Pontos Usados</th>
+      <th onclick="pontosSortTbl(5)">Gasto Total</th>
+      <th onclick="pontosSortTbl(6)">Encomendas</th>
+      <th onclick="pontosSortTbl(7)">Última Compra</th>
+      <th onclick="pontosSortTbl(8)">Cidade</th>
+    </tr></thead>
+    <tbody id="pontos-tbody"></tbody>
+  </table>
+</div>
+
+</div><!-- /tab-pontos -->
+
 <!-- Profile Modal -->
 <div class="overlay" id="overlay" onclick="closeProfile(event)">
   <div class="drawer" id="drawer">
@@ -480,7 +519,9 @@ const SEGMENTS_META = {"champions": {"name": "Champions", "color": "#e8c98a", "i
 const SEG_TABLE = {'5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose','4_5':'champions','4_4':'loyal','4_3':'loyal','4_2':'at_risk','4_1':'cant_lose','3_5':'potential','3_4':'potential','3_3':'attention','3_2':'attention','3_1':'hibernating','2_5':'new','2_4':'promising','2_3':'promising','2_2':'hibernating','2_1':'lost','1_5':'new','1_4':'new','1_3':'promising','1_2':'lost','1_1':'lost'};
 let CUSTOMERS = [];
 let RFV_CUSTOMERS = [];
+let PONTOS_CUSTOMERS = [];
 let rfvLoaded = false;
+let pontosLoaded = false;
 let activeFilter = 'all';
 let activeSegment = null;
 
@@ -524,9 +565,11 @@ let activeSegment = null;
 function switchTab(tab, btn) {
   document.getElementById('tab-clientes').style.display = tab === 'clientes' ? '' : 'none';
   document.getElementById('tab-rfv').style.display       = tab === 'rfv'      ? '' : 'none';
+  document.getElementById('tab-pontos').style.display    = tab === 'pontos'   ? '' : 'none';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (tab === 'rfv' && !rfvLoaded) loadRFV();
+  if (tab === 'pontos' && !pontosLoaded) loadPontos();
 }
 
 // ── RFV: Carregamento lazy ────────────────────────────────────────────────────
@@ -1122,6 +1165,112 @@ function exportCSV() {
   const d    = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   a.href = url; a.download = `cavemen_crm_clientes_${d}.csv`; a.click();
   URL.revokeObjectURL(url);
+}
+
+// \u2500\u2500 Pontos: Carregamento lazy \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function loadPontos() {
+  fetch('/api/crm/pontos')
+    .then(r => r.json())
+    .then(data => {
+      PONTOS_CUSTOMERS = data;
+      pontosLoaded = true;
+      pontosRenderTable(data);
+      document.getElementById('pontos-loadingMsg').style.display = 'none';
+      document.getElementById('pontos-tbl').style.display = '';
+      const withBalance = data.filter(c => c.point_balance > 0);
+      const totalBalance = data.reduce((s, c) => s + (c.point_balance || 0), 0);
+      const totalEarned  = data.reduce((s, c) => s + (c.point_earned  || 0), 0);
+      const avg = withBalance.length ? Math.round(totalBalance / withBalance.length) : 0;
+      const fmtN = n => Math.round(n).toLocaleString('pt-PT');
+      document.getElementById('pontos-s-total').textContent   = fmtN(data.length);
+      document.getElementById('pontos-s-balance').textContent = fmtN(totalBalance) + ' pts';
+      document.getElementById('pontos-s-avg').textContent     = fmtN(avg) + ' pts';
+      document.getElementById('pontos-s-earned').textContent  = fmtN(totalEarned) + ' pts';
+      document.getElementById('pontos-cnt').textContent = data.length + ' cliente' + (data.length !== 1 ? 's' : '');
+    })
+    .catch(() => {
+      document.getElementById('pontos-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados de pontos.</div>';
+    });
+}
+
+function pontosRenderTable(data) {
+  const tbody = document.getElementById('pontos-tbody');
+  const maxBalance = data.length ? Math.max(...data.map(c => c.point_balance || 0)) : 1;
+  let html = '';
+  data.forEach((c, i) => {
+    const rank = i + 1;
+    const rankCls = rank <= 3 ? ' rank-gold' : '';
+    const pts     = Math.round(c.point_balance || 0).toLocaleString('pt-PT');
+    const earned  = Math.round(c.point_earned  || 0).toLocaleString('pt-PT');
+    const spent   = Math.round(c.point_spent   || 0).toLocaleString('pt-PT');
+    const money   = (c.total_spent || 0).toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const pct     = maxBalance > 0 ? Math.round((c.point_balance || 0) / maxBalance * 100) : 0;
+    html += `<tr class="customer-row" data-rank="${rank}" data-name="${(c.name||'').toLowerCase()}" data-email="${(c.email||'').toLowerCase()}" data-balance="${c.point_balance||0}">
+      <td class="td-rank${rankCls}">${rank}</td>
+      <td>
+        <div class="c-name">${c.name || '\u2014'}</div>
+        <div class="c-email">${c.email || ''}</div>
+        ${c.city ? `<div class="c-loc">${c.city}</div>` : ''}
+      </td>
+      <td>
+        <div class="num gold">${pts} pts</div>
+        <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+      </td>
+      <td><div class="num">${earned} pts</div></td>
+      <td><div class="num">${spent} pts</div></td>
+      <td><div class="num gold">${money}\u20AC</div></td>
+      <td><div class="num">${c.total_orders || 0}</div></td>
+      <td><div class="sub">${c.last_order || '\u2014'}</div></td>
+      <td><div class="c-loc">${c.city || '\u2014'}</div></td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function pontosApplyFilter() {
+  const q = document.getElementById('pontosSearch').value.toLowerCase();
+  const rows = document.querySelectorAll('#pontos-tbody .customer-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const email = row.dataset.email || '';
+    const name  = row.dataset.name  || '';
+    const show  = !q || email.includes(q) || name.includes(q);
+    row.classList.toggle('hidden', !show);
+    if (show) visible++;
+  });
+  document.getElementById('pontos-cnt').textContent = visible + ' cliente' + (visible !== 1 ? 's' : '');
+}
+
+let _pontosSortCol = 2;
+let _pontosSortDir = 'desc';
+
+function pontosSortTbl(col) {
+  const tbody = document.getElementById('pontos-tbody');
+  const rows  = [...tbody.querySelectorAll('.customer-row')];
+  const dir   = (_pontosSortCol === col && _pontosSortDir === 'desc') ? 'asc' : 'desc';
+  _pontosSortCol = col; _pontosSortDir = dir;
+  const arrow = dir === 'desc' ? ' \u2193' : ' \u2191';
+  const headers = ['#','Cliente','Pontos Dispon\u00EDveis','Pontos Ganhos','Pontos Usados','Gasto Total','Encomendas','\u00DAltima Compra','Cidade'];
+  document.querySelectorAll('#pontos-tbl thead th').forEach((th, i) => {
+    th.classList.toggle('sorted', i === col);
+    th.textContent = headers[i] + (i === col ? arrow : '');
+  });
+  rows.sort((a, b) => {
+    let va, vb;
+    if (col === 0) { va = parseInt(a.dataset.rank); vb = parseInt(b.dataset.rank); }
+    else if (col === 1) { va = a.dataset.name; vb = b.dataset.name; return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
+    else if (col === 2) { va = parseFloat(a.dataset.balance); vb = parseFloat(b.dataset.balance); }
+    else {
+      const tds = [null, null, null, null, null, null, null, null, null];
+      const aT = a.querySelectorAll('td'); const bT = b.querySelectorAll('td');
+      const parseNum = s => parseFloat((s||'').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.')) || 0;
+      va = parseNum(aT[col] ? aT[col].textContent : '');
+      vb = parseNum(bT[col] ? bT[col].textContent : '');
+      if (col === 7 || col === 8) { va = (aT[col]||{}).textContent||''; vb = (bT[col]||{}).textContent||''; return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
+    }
+    return dir === 'asc' ? va - vb : vb - va;
+  });
+  rows.forEach(r => tbody.appendChild(r));
 }
 </script>
 </body>

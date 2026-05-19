@@ -149,6 +149,7 @@ _clients_by_day = {}       # "YYYY-MM-DD" → { store → [client_ids] }
 _crm_customers = []        # lista completa com todos os campos
 _crm_lite      = []        # lista leve para a tabela (sem orders/products)
 _crm_rfv       = []        # lista com campos rfv para a matriz
+_crm_pontos    = []        # lista de clientes com pontos Mageplaza
 
 def load_crm_data():
     """Carrega crm_data.json (ou Neon) em memória e pré-computa as vistas lite e rfv."""
@@ -201,6 +202,18 @@ def load_crm_data():
         "rfv_segment":  c.get("rfv_segment", "lost"),
     } for c in _crm_customers]
     print(f"✅ CRM em memória: {len(_crm_customers)} clientes")
+    # pontos are loaded separately via load_pontos_data()
+
+
+def load_pontos_data():
+    """Carrega pontos_data do Neon para memória."""
+    global _crm_pontos
+    db_data = neon_load("pontos_data")
+    if db_data:
+        _crm_pontos = db_data
+        print(f"✅ pontos_data carregado do Neon: {len(_crm_pontos)} clientes")
+    else:
+        print("⚠️  pontos_data: Neon vazio")
 
 
 def load_precomputed():
@@ -296,6 +309,7 @@ def load_precomputed():
     # Load CRM data
     neon_init()
     load_crm_data()
+    load_pontos_data()
     print(f"   Intervalo: {min(_monthly_cache) if _monthly_cache else '—'} → {max(_monthly_cache) if _monthly_cache else '—'}")
 
 def _load_month_cache(month_key, mdata):
@@ -1167,6 +1181,19 @@ def api_crm_rfv():
     from flask import make_response
     resp = make_response(json.dumps(_crm_rfv, ensure_ascii=False))
     resp.headers['Content-Type'] = 'application/json; charset=utf-8'
+    return resp
+
+@app.route("/api/crm/pontos")
+def api_crm_pontos():
+    """Lista de clientes ordenada por pontos Mageplaza."""
+    if not _crm_pontos:
+        load_pontos_data()  # lazy load from Neon
+    if not _crm_pontos:
+        return jsonify({"error": "pontos_data não encontrado"}), 404
+    from flask import make_response
+    resp = make_response(json.dumps(_crm_pontos, ensure_ascii=False))
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    resp.headers["Cache-Control"] = "no-cache"
     return resp
 
 if __name__ == "__main__":
