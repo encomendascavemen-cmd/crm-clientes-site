@@ -84,7 +84,13 @@ def neon_load(key: str):
         with conn.cursor() as cur:
             cur.execute("SELECT value FROM kv_store WHERE key = %s", (key,))
             row = cur.fetchone()
-        return json.loads(row[0]) if row else None
+        if not row:
+            return None
+        val = row[0]
+        # JSONB columns are already deserialized by psycopg2; TEXT columns need json.loads
+        if isinstance(val, (dict, list)):
+            return val
+        return json.loads(val)
     except Exception as e:
         print(f"⚠️  Neon load '{key}': {e}")
         return None
