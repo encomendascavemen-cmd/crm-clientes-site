@@ -689,6 +689,8 @@ def api_crm_debug():
 def api_crm_lite():
     """Lista leve de todos os clientes (sem orders/products) — servida da memória."""
     if not _crm_lite:
+        load_crm_data()  # lazy load from Neon on first request after cold start
+    if not _crm_lite:
         return jsonify({"error": "crm_data.json não encontrado. Corre crm_clientes.py primeiro."}), 404
     from flask import make_response
     resp = make_response(json.dumps(_crm_lite, ensure_ascii=False))
@@ -699,6 +701,8 @@ def api_crm_lite():
 @app.route("/api/crm/customer/<int:idx>")
 def api_crm_customer(idx):
     """Devolve o perfil completo de um cliente pelo seu índice no ranking — da memória."""
+    if not _crm_customers:
+        load_crm_data()  # lazy load
     if not _crm_customers:
         return jsonify({"error": "crm_data.json não encontrado. Corre crm_clientes.py primeiro."}), 404
     if idx < 0 or idx >= len(_crm_customers):
@@ -1126,6 +1130,8 @@ def rfv_page():
 @app.route("/api/crm/rfv")
 def api_crm_rfv():
     """Matriz RFV — servida da memória."""
+    if not _crm_rfv:
+        load_crm_data()  # lazy load from Neon on first request after cold start
     if not _crm_rfv:
         return jsonify({"error": "crm_data.json não encontrado"}), 404
     from flask import make_response
