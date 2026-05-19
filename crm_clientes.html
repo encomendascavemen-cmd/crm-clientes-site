@@ -463,7 +463,7 @@ thead th.sorted{color:var(--gold);}
   <div class="stat"><div class="stat-l">Clientes com pontos</div><div class="stat-v" id="pontos-s-total">…</div><div class="stat-s">saldo positivo</div></div>
   <div class="stat"><div class="stat-l">Pontos em circulação</div><div class="stat-v" id="pontos-s-balance">…</div><div class="stat-s">total disponível</div></div>
   <div class="stat"><div class="stat-l">Média por cliente</div><div class="stat-v" id="pontos-s-avg">…</div><div class="stat-s">pontos disponíveis</div></div>
-  <div class="stat"><div class="stat-l">Total pontos ganhos</div><div class="stat-v" id="pontos-s-earned">…</div><div class="stat-s">histórico acumulado</div></div>
+  <div class="stat"><div class="stat-l">Pts de compras</div><div class="stat-v" id="pontos-s-earned">…</div><div class="stat-s">ganhos por compras online</div></div>
 </div>
 
 <div class="controls">
@@ -481,12 +481,13 @@ thead th.sorted{color:var(--gold);}
       <th onclick="pontosSortTbl(0)">#</th>
       <th onclick="pontosSortTbl(1)">Cliente</th>
       <th onclick="pontosSortTbl(2)" class="sorted" id="pontos-th-balance">Pontos Disponíveis ↓</th>
-      <th onclick="pontosSortTbl(3)">Pontos Ganhos</th>
-      <th onclick="pontosSortTbl(4)">Pontos Usados</th>
-      <th onclick="pontosSortTbl(5)">Gasto Total</th>
-      <th onclick="pontosSortTbl(6)">Encomendas</th>
-      <th onclick="pontosSortTbl(7)">Última Compra</th>
-      <th onclick="pontosSortTbl(8)">Cidade</th>
+      <th onclick="pontosSortTbl(3)" title="Pontos disponíveis + pontos já usados = total alguma vez recebido">Total Recebido</th>
+      <th onclick="pontosSortTbl(4)" title="Pontos ganhos apenas através de compras online">Pts de Compras</th>
+      <th onclick="pontosSortTbl(5)">Pontos Usados</th>
+      <th onclick="pontosSortTbl(6)" title="Apenas vendas online (Magento). Compras em loja física não incluídas.">Gasto Online</th>
+      <th onclick="pontosSortTbl(7)">Encomendas</th>
+      <th onclick="pontosSortTbl(8)">Última Compra</th>
+      <th onclick="pontosSortTbl(9)">Cidade</th>
     </tr></thead>
     <tbody id="pontos-tbody"></tbody>
   </table>
@@ -1200,22 +1201,23 @@ function pontosRenderTable(data) {
   data.forEach((c, i) => {
     const rank = i + 1;
     const rankCls = rank <= 3 ? ' rank-gold' : '';
-    const pts     = Math.round(c.point_balance || 0).toLocaleString('pt-PT');
-    const earned  = Math.round(c.point_earned  || 0).toLocaleString('pt-PT');
-    const spent   = Math.round(c.point_spent   || 0).toLocaleString('pt-PT');
-    const money   = (c.total_spent || 0).toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    const pct     = maxBalance > 0 ? Math.round((c.point_balance || 0) / maxBalance * 100) : 0;
+    const pts          = Math.round(c.point_balance || 0).toLocaleString('pt-PT');
+    const totalReceived= Math.round((c.point_balance || 0) + (c.point_spent || 0)).toLocaleString('pt-PT');
+    const earned       = Math.round(c.point_earned  || 0).toLocaleString('pt-PT');
+    const spent        = Math.round(c.point_spent   || 0).toLocaleString('pt-PT');
+    const money        = (c.total_spent || 0).toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const pct          = maxBalance > 0 ? Math.round((c.point_balance || 0) / maxBalance * 100) : 0;
     html += `<tr class="customer-row" data-rank="${rank}" data-name="${(c.name||'').toLowerCase()}" data-email="${(c.email||'').toLowerCase()}" data-balance="${c.point_balance||0}">
       <td class="td-rank${rankCls}">${rank}</td>
       <td>
         <div class="c-name">${c.name || '\u2014'}</div>
         <div class="c-email">${c.email || ''}</div>
-        ${c.city ? `<div class="c-loc">${c.city}</div>` : ''}
       </td>
       <td>
         <div class="num gold">${pts} pts</div>
         <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
       </td>
+      <td><div class="num">${totalReceived} pts</div></td>
       <td><div class="num">${earned} pts</div></td>
       <td><div class="num">${spent} pts</div></td>
       <td><div class="num gold">${money}\u20AC</div></td>
@@ -1250,7 +1252,7 @@ function pontosSortTbl(col) {
   const dir   = (_pontosSortCol === col && _pontosSortDir === 'desc') ? 'asc' : 'desc';
   _pontosSortCol = col; _pontosSortDir = dir;
   const arrow = dir === 'desc' ? ' \u2193' : ' \u2191';
-  const headers = ['#','Cliente','Pontos Dispon\u00EDveis','Pontos Ganhos','Pontos Usados','Gasto Total','Encomendas','\u00DAltima Compra','Cidade'];
+  const headers = ['#','Cliente','Pontos Dispon\u00EDveis','Total Recebido','Pts de Compras','Pontos Usados','Gasto Online','Encomendas','\u00DAltima Compra','Cidade'];
   document.querySelectorAll('#pontos-tbl thead th').forEach((th, i) => {
     th.classList.toggle('sorted', i === col);
     th.textContent = headers[i] + (i === col ? arrow : '');
