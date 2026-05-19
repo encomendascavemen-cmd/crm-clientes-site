@@ -1,0 +1,27 @@
+# Caches (grandes, regenerados no update)
+gender_orders_cache.json
+gender_search_terms_cache.json
+products_data_v2.json
+products_data.json
+clients_data.json
+dashboard_data.json
+categorize_suggestions.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Logs
+*.log
+update_error.log
+update.log
+
+# Dados gerados (grandes, vêm do Magento ou do Neon)
+crm_data.json
+crm_orders_cache.json
+cache/
+
+# Claude workspace
+.claude/

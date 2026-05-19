@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cavemen Store · Dashboard de Vendas</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0f1117; --card:#1a1d27; --border:#2a2d3e;
+    --text:#e2e8f0; --muted:#8892a4;
+    --blue:#3B82F6; --green:#10B981; --amber:#F59E0B; --purple:#8B5CF6;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:14px; min-height:100vh; }
+
+  /* ── HEADER ── */
+  header { display:flex; align-items:center; justify-content:space-between; padding:16px 28px; border-bottom:1px solid var(--border); background:var(--card); flex-wrap:wrap; gap:12px; }
+  .logo { display:flex; align-items:center; gap:10px; }
+  .logo-icon { width:36px; height:36px; background:linear-gradient(135deg,#3B82F6,#8B5CF6); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .logo h1 { font-size:16px; font-weight:700; }
+  .logo p { font-size:11px; color:var(--muted); }
+
+  /* ── DATE PICKER BAR ── */
+  .date-bar {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:rgba(255,255,255,0.03); border:1px solid var(--border);
+    border-radius:12px; padding:10px 16px;
+  }
+  .date-bar label { font-size:12px; color:var(--muted); white-space:nowrap; }
+  .date-bar select, .date-bar input {
+    background:rgba(255,255,255,0.06); border:1px solid var(--border);
+    color:var(--text); border-radius:8px; padding:6px 10px; font-size:13px;
+    outline:none; cursor:pointer;
+  }
+  .date-bar select option { background:#1a1d27; }
+  .date-bar select:focus, .date-bar input:focus { border-color:var(--blue); }
+  .btn-apply {
+    background:var(--blue); color:#fff; border:none; border-radius:8px;
+    padding:7px 18px; font-size:13px; font-weight:600; cursor:pointer;
+    transition:opacity .15s;
+  }
+  .btn-apply:hover { opacity:.85; }
+  .btn-apply:disabled { opacity:.4; cursor:default; }
+  .presets { display:flex; gap:6px; flex-wrap:wrap; }
+  .preset-btn {
+    background:rgba(255,255,255,0.05); border:1px solid var(--border);
+    color:var(--muted); border-radius:7px; padding:5px 10px;
+    font-size:12px; cursor:pointer; transition:all .15s; white-space:nowrap;
+  }
+  .preset-btn:hover, .preset-btn.active { background:rgba(59,130,246,.15); border-color:var(--blue); color:var(--blue); }
+
+  /* ── LOADING ── */
+  .loading-bar {
+    height:3px; background:linear-gradient(90deg,#3B82F6,#8B5CF6);
+    border-radius:99px;
+    animation:loading 1.2s ease-in-out infinite;
+    display:none;
+  }
+  .loading-bar.show { display:block; }
+  @keyframes loading { 0%{width:0;opacity:1} 70%{width:100%;opacity:1} 100%{width:100%;opacity:0} }
+  .status-text { font-size:12px; color:var(--muted); min-width:180px; }
+
+  main { padding:22px 28px; max-width:1600px; margin:0 auto; }
+
+  /* ── KPI GRID ── */
+  .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:13px; padding:18px 20px; position:relative; overflow:hidden; }
+  .kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:13px 13px 0 0; }
+  .kpi.k0::before { background:linear-gradient(90deg,#3B82F6,#8B5CF6); }
+  .kpi.k1::before { background:#3B82F6; }
+  .kpi.k2::before { background:#10B981; }
+  .kpi.k3::before { background:#F59E0B; }
+  .kpi.k4::before { background:#8B5CF6; }
+  .kpi-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+  .kpi-value { font-size:22px; font-weight:700; letter-spacing:-.5px; transition:opacity .3s; }
+  .kpi-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+  /* ── QUOTA BARS ── */
+  .quota-bars { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+  .quota-card { background:var(--card); border:1px solid var(--border); border-radius:13px; padding:16px 18px; }
+  .quota-name { font-size:12px; font-weight:600; margin-bottom:10px; }
+  .quota-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .quota-label { width:80px; font-size:12px; color:var(--muted); flex-shrink:0; }
+  .quota-track { flex:1; height:8px; background:rgba(255,255,255,0.06); border-radius:999px; overflow:hidden; }
+  .quota-fill { height:100%; border-radius:999px; transition:width .6s ease; }
+  .quota-val { width:45px; text-align:right; font-size:12px; font-weight:600; flex-shrink:0; }
+
+  /* ── CHARTS ── */
+  .charts-row { display:grid; gap:16px; margin-bottom:20px; }
+  .row-2 { grid-template-columns:2fr 1fr; }
+  .row-1 { grid-template-columns:1fr; }
+  .chart-card { background:var(--card); border:1px solid var(--border); border-radius:13px; padding:20px; }
+  .chart-title { font-size:14px; font-weight:600; margin-bottom:3px; }
+  .chart-sub { font-size:12px; color:var(--muted); margin-bottom:14px; }
+
+  /* ── TOP PRODUCTS TABLE ── */
+  .table-card { background:var(--card); border:1px solid var(--border); border-radius:13px; padding:20px; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { text-align:left; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; padding:7px 10px; border-bottom:1px solid var(--border); }
+  tbody tr:hover { background:rgba(255,255,255,0.025); }
+  tbody td { padding:10px 10px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .rank { color:var(--muted); font-size:12px; width:28px; }
+  .ref { font-family:monospace; font-size:11px; color:var(--muted); }
+  .name { font-weight:500; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pill { display:inline-block; padding:2px 7px; border-radius:20px; font-size:11px; margin-right:3px; }
+  .rev-bar { display:flex; align-items:center; gap:7px; }
+  .rev-mini { flex:1; height:5px; background:rgba(255,255,255,0.07); border-radius:999px; overflow:hidden; max-width:80px; }
+  .rev-fill { height:100%; background:linear-gradient(90deg,#3B82F6,#8B5CF6); border-radius:999px; }
+
+  footer { text-align:center; padding:16px; color:var(--muted); font-size:12px; border-top:1px solid var(--border); margin-top:8px; }
+
+  @media(max-width:1100px) {
+    .kpi-grid { grid-template-columns:repeat(3,1fr); }
+    .quota-bars { grid-template-columns:repeat(2,1fr); }
+    .row-2 { grid-template-columns:1fr; }
+  }
+  @media(max-width:640px) {
+    main { padding:12px; }
+    header { padding:12px; }
+    .kpi-grid { grid-template-columns:repeat(2,1fr); }
+    .quota-bars { grid-template-columns:1fr; }
+  }
+
+  .skeleton { animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🪨</div>
+    <div>
+      <h1>Cavemen Store</h1>
+      <p>Dashboard de Vendas · Moloni</p>
+    </div>
+  </div>
+  <a href="/products" style="color:var(--muted);text-decoration:none;font-size:13px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;transition:all .15s;" onmouseover="this.style.color='#e2e8f0';this.style.borderColor='#3B82F6'" onmouseout="this.style.color='#8892a4';this.style.borderColor='var(--border)'">Relatório de Produtos →</a>
+
+  <!-- DATE FILTER BAR -->
+  <div class="date-bar">
+    <div class="presets">
+      <button class="preset-btn" onclick="applyPreset(1)">Últ. mês</button>
+      <button class="preset-btn" onclick="applyPreset(3)">3 meses</button>
+      <button class="preset-btn active" onclick="applyPreset(12)">12 meses</button>
+      <button class="preset-btn" onclick="applyPreset(24)">24 meses</button>
+    </div>
+    <div style="width:1px;height:28px;background:var(--border);margin:0 4px;"></div>
+    <label>De</label>
+    <select id="fromMonth"></select>
+    <select id="fromYear"></select>
+    <label>Até</label>
+    <select id="toMonth"></select>
+    <select id="toYear"></select>
+    <button class="btn-apply" id="btnApply" onclick="loadData()">Aplicar</button>
+    <span class="status-text" id="statusText">A carregar...</span>
+  </div>
+</header>
+
+<div class="loading-bar" id="loadingBar"></div>
+
+<main>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi k0">
+      <div class="kpi-label">Faturação Total</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub" id="kpi-total-sub">—</div>
+    </div>
+    <div class="kpi k1">
+      <div class="kpi-label">Loja Guimarães</div>
+      <div class="kpi-value" id="kpi-gm">—</div>
+      <div class="kpi-sub" id="kpi-gm-sub">—</div>
+    </div>
+    <div class="kpi k2">
+      <div class="kpi-label">Loja Braga</div>
+      <div class="kpi-value" id="kpi-br">—</div>
+      <div class="kpi-sub" id="kpi-br-sub">—</div>
+    </div>
+    <div class="kpi k3">
+      <div class="kpi-label">Loja Porto</div>
+      <div class="kpi-value" id="kpi-pt">—</div>
+      <div class="kpi-sub" id="kpi-pt-sub">—</div>
+    </div>
+    <div class="kpi k4">
+      <div class="kpi-label">Loja Online</div>
+      <div class="kpi-value" id="kpi-on">—</div>
+      <div class="kpi-sub" id="kpi-on-sub">—</div>
+    </div>
+  </div>
+
+  <!-- QUOTA BARS -->
+  <div class="quota-bars" id="quotaBars"></div>
+
+  <!-- MONTHLY REVENUE -->
+  <div class="charts-row row-1">
+    <div class="chart-card">
+      <div class="chart-title">Faturação Mensal por Loja</div>
+      <div class="chart-sub" id="chartSub">IVA incluído</div>
+      <canvas id="monthlyChart" height="70"></canvas>
+    </div>
+  </div>
+
+  <!-- DAILY + DONUT -->
+  <div class="charts-row row-2">
+    <div class="chart-card">
+      <div class="chart-title">Vendas Diárias</div>
+      <div class="chart-sub">Barras empilhadas por loja</div>
+      <canvas id="dailyChart" height="110"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Quota por Loja</div>
+      <div class="chart-sub">% do total faturado</div>
+      <div style="display:flex;align-items:center;justify-content:center;max-height:280px;">
+        <canvas id="donutChart" style="max-height:260px;max-width:260px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY ORDERS -->
+  <div class="charts-row row-1">
+    <div class="chart-card">
+      <div class="chart-title">Número de Vendas por Loja</div>
+      <div class="chart-sub">Quantidade de documentos emitidos por mês</div>
+      <canvas id="ordersChart" height="65"></canvas>
+    </div>
+  </div>
+
+  <!-- TOP PRODUCTS -->
+  <div class="table-card">
+    <div class="chart-title" style="margin-bottom:4px;">Top Produtos</div>
+    <div class="chart-sub">Por faturação no período selecionado</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Referência</th><th>Nome</th>
+            <th style="text-align:right;">Qtd.</th>
+            <th>Faturação</th>
+            <th style="text-align:right;">Preço Médio</th>
+            <th>Lojas</th>
+          </tr>
+        </thead>
+        <tbody id="productsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer id="footer">Cavemen Store · Dashboard · Moloni</footer>
+
+<script>
+const COLORS = {
+  "Guimarães": "#3B82F6",
+  "Braga":     "#10B981",
+  "Porto":     "#F59E0B",
+  "Online":    "#8B5CF6",
+};
+const STORES = ["Guimarães","Braga","Porto","Online"];
+const KPI_IDS = {"Guimarães":"gm","Braga":"br","Porto":"pt","Online":"on"};
+const MONTH_NAMES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+Chart.defaults.color = '#8892a4';
+Chart.defaults.borderColor = '#2a2d3e';
+Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+
+let monthlyChart=null, dailyChart=null, donutChart=null, ordersChart=null;
+
+function fmtEur(v) {
+  return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v);
+}
+function fmtEurDec(v) {
+  return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v);
+}
+function fmtMonth(m) {
+  const [y,mo] = m.split("-");
+  return MONTH_NAMES[parseInt(mo)-1] + " " + y;
+}
+
+// ── BUILD DATE SELECTORS ─────────────────────────────────────
+function buildSelectors() {
+  const months = MONTH_NAMES.map((n,i) => `<option value="${i+1}">${n}</option>`).join('');
+  document.getElementById('fromMonth').innerHTML = months;
+  document.getElementById('toMonth').innerHTML   = months;
+
+  const now = new Date();
+  let yearOpts = '';
+  for (let y = 2024; y <= now.getFullYear(); y++) {
+    yearOpts += `<option value="${y}">${y}</option>`;
+  }
+  document.getElementById('fromYear').innerHTML = yearOpts;
+  document.getElementById('toYear').innerHTML   = yearOpts;
+
+  // Default: 12 months ago → current month
+  const from = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  document.getElementById('fromMonth').value = from.getMonth() + 1;
+  document.getElementById('fromYear').value  = from.getFullYear();
+  document.getElementById('toMonth').value   = now.getMonth() + 1;
+  document.getElementById('toYear').value    = now.getFullYear();
+}
+
+function getRange() {
+  const fm = document.getElementById('fromMonth').value.padStart(2,'0');
+  const fy = document.getElementById('fromYear').value;
+  const tm = document.getElementById('toMonth').value.padStart(2,'0');
+  const ty = document.getElementById('toYear').value;
+  return { from: `${fy}-${fm}`, to: `${ty}-${tm}` };
+}
+
+function applyPreset(months) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+  document.getElementById('fromMonth').value = from.getMonth() + 1;
+  document.getElementById('fromYear').value  = from.getFullYear();
+  document.getElementById('toMonth').value   = now.getMonth() + 1;
+  document.getElementById('toYear').value    = now.getFullYear();
+  loadData();
+}
+
+// ── FETCH DATA ───────────────────────────────────────────────
+async function loadData() {
+  const { from, to } = getRange();
+  const bar  = document.getElementById('loadingBar');
+  const btn  = document.getElementById('btnApply');
+  const stat = document.getElementById('statusText');
+
+  bar.classList.add('show');
+  btn.disabled = true;
+  stat.textContent = `A carregar ${from} → ${to}...`;
+
+  try {
+    const res  = await fetch(`http://localhost:5001/api/data?from=${from}&to=${to}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderDashboard(data, from, to);
+    stat.textContent = `✅ ${data.months.length} meses · ${data.total_orders.toLocaleString('pt-PT')} vendas`;
+  } catch (e) {
+    stat.textContent = `⚠️ Erro: ${e.message}`;
+    console.error(e);
+  } finally {
+    bar.classList.remove('show');
+    btn.disabled = false;
+  }
+}
+
+// ── RENDER ──────────────────────────────────────────────────
+function renderDashboard(data, from, to) {
+  const total = data.total_revenue;
+
+  // KPIs
+  document.getElementById('kpi-total').textContent = fmtEur(total);
+  document.getElementById('kpi-total-sub').textContent =
+    `${data.total_orders.toLocaleString('pt-PT')} vendas · Média ${fmtEur(total/data.total_orders)}/venda`;
+
+  STORES.forEach(store => {
+    const id  = KPI_IDS[store];
+    const rev = data.store_totals[store] || 0;
+    const ord = data.store_orders[store] || 0;
+    const avg = data.store_avg_ticket[store] || 0;
+    document.getElementById(`kpi-${id}`).textContent = fmtEur(rev);
+    document.getElementById(`kpi-${id}-sub`).textContent =
+      `${ord.toLocaleString('pt-PT')} vendas · Ticket ${fmtEur(avg)}`;
+  });
+
+  // Quota bars
+  const quotaHtml = STORES.map(store => {
+    const rev = data.store_totals[store] || 0;
+    const pct = total > 0 ? (rev/total*100).toFixed(1) : 0;
+    const ord = data.store_orders[store] || 0;
+    const avg = data.store_avg_ticket[store] || 0;
+    return `<div class="quota-card">
+      <div class="quota-name" style="color:${COLORS[store]};">${store}</div>
+      <div class="quota-row">
+        <div class="quota-label">Faturação</div>
+        <div class="quota-track"><div class="quota-fill" style="width:${pct}%;background:${COLORS[store]};"></div></div>
+        <div class="quota-val" style="color:${COLORS[store]};">${pct}%</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);">${fmtEur(rev)} · ${ord} vendas · ticket ${fmtEur(avg)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('quotaBars').innerHTML = quotaHtml;
+
+  const months = data.months;
+  const monthLabels = months.map(fmtMonth);
+
+  // subtitle
+  document.getElementById('chartSub').textContent = `${fmtMonth(from)} → ${fmtMonth(to)} · IVA incluído`;
+
+  // ── Monthly Revenue Line Chart
+  const monthlyDs = STORES.map(store => ({
+    label: store,
+    data: months.map(m => data.monthly_revenue[store]?.[m] || 0),
+    borderColor: COLORS[store],
+    backgroundColor: COLORS[store] + '20',
+    tension: 0.4, fill: false, pointRadius: 4, borderWidth: 2.5,
+  }));
+
+  if (monthlyChart) {
+    monthlyChart.data.labels = monthLabels;
+    monthlyChart.data.datasets = monthlyDs;
+    monthlyChart.update('active');
+  } else {
+    monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+      type: 'line',
+      data: { labels: monthLabels, datasets: monthlyDs },
+      options: {
+        responsive: true,
+        interaction: { mode:'index', intersect:false },
+        plugins: {
+          legend: { position:'top', align:'end', labels:{ boxWidth:12, padding:16, font:{size:12} } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmtEur(c.parsed.y)}` } }
+        },
+        scales: {
+          x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{maxRotation:0} },
+          y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{callback:v=>fmtEur(v)} }
+        }
+      }
+    });
+  }
+
+  // ── Daily Stacked Bar
+  const days = data.days || [];
+  const dayLabels = days.map(d => d.slice(5)); // MM-DD
+  const dailyDs = STORES.map(store => ({
+    label: store,
+    data: days.map(d => data.daily_revenue[store]?.[d] || 0),
+    backgroundColor: COLORS[store],
+    borderRadius: 3,
+  }));
+
+  if (dailyChart) {
+    dailyChart.data.labels = dayLabels;
+    dailyChart.data.datasets = dailyDs;
+    dailyChart.update('active');
+  } else {
+    dailyChart = new Chart(document.getElementById('dailyChart'), {
+      type: 'bar',
+      data: { labels: dayLabels, datasets: dailyDs },
+      options: {
+        responsive: true,
+        interaction: { mode:'index', intersect:false },
+        plugins: {
+          legend: { position:'top', align:'end', labels:{ boxWidth:12, padding:14, font:{size:11} } },
+          tooltip: {
+            callbacks: {
+              label: c => ` ${c.dataset.label}: ${fmtEur(c.parsed.y)}`,
+              footer: items => ` Total: ${fmtEur(items.reduce((a,b)=>a+b.parsed.y,0))}`
+            }
+          }
+        },
+        scales: {
+          x: { stacked:true, grid:{display:false}, ticks:{maxRotation:45, font:{size:9}} },
+          y: { stacked:true, grid:{color:'rgba(255,255,255,0.04)'}, ticks:{callback:v=>fmtEur(v)} }
+        }
+      }
+    });
+  }
+
+  // ── Donut
+  if (donutChart) {
+    donutChart.data.datasets[0].data = STORES.map(s => data.store_totals[s] || 0);
+    donutChart.update('active');
+  } else {
+    donutChart = new Chart(document.getElementById('donutChart'), {
+      type: 'doughnut',
+      data: {
+        labels: STORES,
+        datasets: [{
+          data: STORES.map(s => data.store_totals[s] || 0),
+          backgroundColor: STORES.map(s => COLORS[s]),
+          borderColor: '#1a1d27', borderWidth: 3, hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true, cutout:'65%',
+        plugins: {
+          legend: { position:'bottom', labels:{ padding:14, boxWidth:12, font:{size:12} } },
+          tooltip: {
+            callbacks: {
+              label: c => ` ${c.label}: ${fmtEur(c.parsed)} (${(c.parsed/total*100).toFixed(1)}%)`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Monthly Orders Bar
+  const ordersDs = STORES.map(store => ({
+    label: store,
+    data: months.map(m => data.monthly_orders[store]?.[m] || 0),
+    backgroundColor: COLORS[store], borderRadius: 4,
+  }));
+
+  if (ordersChart) {
+    ordersChart.data.labels = monthLabels;
+    ordersChart.data.datasets = ordersDs;
+    ordersChart.update('active');
+  } else {
+    ordersChart = new Chart(document.getElementById('ordersChart'), {
+      type: 'bar',
+      data: { labels: monthLabels, datasets: ordersDs },
+      options: {
+        responsive: true,
+        interaction: { mode:'index', intersect:false },
+        plugins: {
+          legend: { position:'top', align:'end', labels:{ boxWidth:12, padding:16, font:{size:12} } },
+        },
+        scales: {
+          x: { grid:{display:false}, ticks:{maxRotation:0} },
+          y: { grid:{color:'rgba(255,255,255,0.04)'}, beginAtZero:true }
+        }
+      }
+    });
+  }
+
+  // ── Top Products Table
+  const products = data.top_products || [];
+  const maxRev = products.length ? products[0].revenue : 1;
+  const tbody = document.getElementById('productsBody');
+  tbody.innerHTML = products.map((p, i) => {
+    const barPct = (p.revenue / maxRev * 100).toFixed(1);
+    const storePills = Object.entries(p.by_store || {})
+      .filter(([,v]) => v.revenue > 0)
+      .map(([s]) => `<span class="pill" style="background:${COLORS[s]}22;color:${COLORS[s]};">${s}</span>`)
+      .join('');
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td class="ref">${(p.reference||'').substring(0,20)}</td>
+      <td class="name">${(p.name||'').substring(0,60)}</td>
+      <td style="text-align:right;">${p.qty}</td>
+      <td><div class="rev-bar">
+        <div class="rev-mini"><div class="rev-fill" style="width:${barPct}%"></div></div>
+        <span style="font-weight:600;">${fmtEurDec(p.revenue)}</span>
+      </div></td>
+      <td style="text-align:right;">${fmtEurDec(p.avg_price)}</td>
+      <td>${storePills}</td>
+    </tr>`;
+  }).join('');
+
+  // Footer
+  document.getElementById('footer').textContent =
+    `Cavemen Store · Dashboard · ${from} → ${to} · ${data.months.length} meses de dados`;
+}
+
+// ── INIT ────────────────────────────────────────────────────
+buildSelectors();
+loadData();
+</script>
+</body>
+</html>

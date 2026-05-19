@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Matriz RFV · Cavemen Store</title>
+<style>
+:root{--bg:#0f0f0f;--s1:#1a1a1a;--s2:#222;--s3:#2a2a2a;--border:#2e2e2e;--text:#e8e8e8;--muted:#777;--accent:#c9a96e;--gold:#e8c98a;--green:#4caf89;--red:#e05454;--blue:#5b9bd5;--orange:#f0a732;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;}
+header{background:var(--s1);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.3rem;font-weight:800;color:var(--gold);letter-spacing:.05em;}
+.logo span{color:var(--muted);font-weight:400;}
+.gen{margin-left:auto;font-size:.72rem;color:var(--muted);}
+.back-btn{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:.8rem;text-decoration:none;white-space:nowrap;}
+.back-btn:hover{background:var(--s3);}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
+.stat{background:var(--s1);padding:14px 20px;}
+.stat-l{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px;}
+.stat-v{font-size:1.45rem;font-weight:700;color:var(--gold);line-height:1;}
+.stat-s{font-size:.7rem;color:var(--muted);margin-top:3px;}
+.main-wrap{padding:24px 28px 60px;}
+.section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:700;margin-bottom:16px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+/* Matrix */
+.matrix-section{margin-bottom:32px;}
+.matrix-container{display:inline-block;}
+.matrix-wrap{display:flex;gap:0;}
+.matrix-y-labels{display:flex;flex-direction:column;justify-content:space-around;padding-right:10px;padding-top:28px;padding-bottom:4px;}
+.matrix-y-label{font-size:.65rem;color:var(--muted);text-align:right;width:60px;display:flex;align-items:center;justify-content:flex-end;}
+.matrix-inner{}
+.matrix-x-labels{display:flex;justify-content:space-around;padding-left:4px;margin-top:6px;}
+.matrix-x-label{font-size:.65rem;color:var(--muted);text-align:center;width:80px;}
+.matrix-x-title{text-align:center;font-size:.7rem;color:var(--muted);margin-top:4px;}
+.matrix-y-title{font-size:.7rem;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;padding-right:6px;}
+.matrix-grid{display:grid;grid-template-columns:repeat(5,80px);grid-template-rows:repeat(5,70px);gap:3px;}
+.matrix-cell{border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s,box-shadow .1s;position:relative;}
+.matrix-cell:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:2;}
+.matrix-cell-count{font-size:1.1rem;font-weight:700;color:rgba(255,255,255,.9);}
+.matrix-cell-seg{font-size:.55rem;color:rgba(255,255,255,.65);text-align:center;margin-top:2px;line-height:1.2;padding:0 4px;}
+/* Segment cards */
+.seg-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:32px;}
+.seg-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;overflow:hidden;}
+.seg-card::before{content:'';position:absolute;inset:0;border-radius:10px;opacity:.07;}
+.seg-card:hover,.seg-card.active{border-color:var(--card-color,var(--accent));}
+.seg-card.active{background:color-mix(in srgb,var(--card-color,var(--accent)) 10%,var(--s1));}
+.seg-icon{font-size:1.4rem;margin-bottom:6px;}
+.seg-name{font-size:.78rem;font-weight:700;margin-bottom:2px;}
+.seg-count{font-size:1.3rem;font-weight:700;}
+.seg-rev{font-size:.7rem;color:var(--muted);margin-top:3px;}
+.seg-pct{font-size:.65rem;padding:2px 6px;border-radius:12px;font-weight:600;margin-top:4px;display:inline-block;}
+/* Controls */
+.controls{padding:0 0 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.search{position:relative;}
+.search input{padding:8px 12px 8px 34px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.88rem;outline:none;width:280px;}
+.search input:focus{border-color:var(--accent);}
+.search::before{content:"🔍";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:.8rem;pointer-events:none;}
+.fbtn{padding:6px 13px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--muted);font-size:.78rem;cursor:pointer;transition:.15s;white-space:nowrap;}
+.fbtn:hover,.fbtn.on{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+.cnt{font-size:.78rem;color:var(--muted);}
+.export-btn{background:var(--s2);color:#4caf89;border-color:#4caf89;font-weight:600;}
+.export-btn:hover{background:#4caf89;color:#000;}
+/* Table */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.88rem;}
+thead th{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);white-space:nowrap;}
+tbody tr{transition:background .1s;}
+tbody tr:hover{background:var(--s2);}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.rfv-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;font-size:.75rem;font-weight:700;}
+.r-badge{background:#1a3a5c;color:#5b9bd5;}
+.f-badge{background:#1a3a2a;color:#4caf89;}
+.v-badge{background:#3a2f0a;color:#e8c98a;}
+.score-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.7rem;font-weight:700;background:var(--s3);color:var(--text);}
+.seg-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.gold{color:var(--gold);font-weight:700;}
+.sub{font-size:.7rem;color:var(--muted);margin-top:2px;}
+.days-hot{color:#4caf89;font-weight:600;}
+.days-warm{color:#f0a732;}
+.days-cold{color:var(--muted);}
+.hidden{display:none!important;}
+.loading{text-align:center;padding:60px;color:var(--muted);}
+.spin{display:inline-block;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">CAVEMEN <span>· RFV</span></div>
+  <div class="gen">Gerado em 19/05/2026 10:51 · 5,309 clientes</div>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <a href="/crm" class="back-btn">← CRM</a>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v">5,309</div><div class="stat-s">com encomendas válidas</div></div>
+  <div class="stat"><div class="stat-l">Champions + Fiéis</div><div class="stat-v" id="s-champ">198</div><div class="stat-s">3.7% do total</div></div>
+  <div class="stat"><div class="stat-l">Em Risco + Não Perder</div><div class="stat-v" id="s-risk">131</div><div class="stat-s">reactivar urgente</div></div>
+  <div class="stat"><div class="stat-l">Receita Champions</div><div class="stat-v">59,735€</div><div class="stat-s">segmento topo</div></div>
+</div>
+
+<div class="main-wrap">
+
+  <!-- Matriz 5x5 -->
+  <div class="matrix-section">
+    <div class="section-title">Matriz RFV 5×5</div>
+    <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+      <div class="matrix-container">
+        <div class="matrix-wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;padding-top:28px;padding-bottom:10px;padding-right:4px;">
+            <div class="matrix-y-title">Frequência (F) →</div>
+          </div>
+          <div class="matrix-y-labels">
+            <div class="matrix-y-label">F=5 (Alta)</div>
+            <div class="matrix-y-label">F=4</div>
+            <div class="matrix-y-label">F=3</div>
+            <div class="matrix-y-label">F=2</div>
+            <div class="matrix-y-label">F=1 (Baixa)</div>
+          </div>
+          <div class="matrix-inner">
+            <div class="matrix-grid" id="matrixGrid"></div>
+            <div class="matrix-x-labels">
+              <div class="matrix-x-label">R=1 (Antiga)</div>
+              <div class="matrix-x-label">R=2</div>
+              <div class="matrix-x-label">R=3</div>
+              <div class="matrix-x-label">R=4</div>
+              <div class="matrix-x-label">R=5 (Recente)</div>
+            </div>
+            <div class="matrix-x-title">← Recência (R)</div>
+          </div>
+        </div>
+      </div>
+      <div id="matrixLegend" style="flex:1;min-width:260px;"></div>
+    </div>
+  </div>
+
+  <!-- Cards de Segmentos -->
+  <div class="section-title">Segmentos</div>
+  <div class="seg-cards" id="segCards"></div>
+
+  <!-- Tabela de Clientes -->
+  <div class="section-title">Clientes por Segmento</div>
+  <div class="controls">
+    <div class="search"><input type="text" id="searchInput" placeholder="Pesquisar por nome ou email…" oninput="applyFilters()"></div>
+    <button class="fbtn on" onclick="clearSegFilter(this)">Todos</button>
+    <span class="cnt" id="cnt">A carregar…</span>
+    <div style="margin-left:auto;">
+      <button class="fbtn export-btn" onclick="exportCSV()">⬇ Exportar CSV</button>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <div id="loadingMsg" class="loading">
+      <div class="spin" style="font-size:2rem">⟳</div>
+      <div style="margin-top:12px;font-size:.9rem">A carregar clientes…</div>
+    </div>
+    <table id="tbl" style="display:none">
+      <thead><tr>
+        <th>#</th>
+        <th>Cliente</th>
+        <th>R 🔵 F 🟢 V 🟡</th>
+        <th>Score</th>
+        <th>Total Gasto</th>
+        <th>Última Compra</th>
+        <th>Segmento</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const MATRIX_DATA = {"5_4": 20, "5_3": 18, "5_5": 12, "4_3": 77, "4_5": 29, "4_2": 73, "5_1": 6, "3_1": 232, "3_3": 121, "4_4": 42, "5_2": 9, "4_1": 43, "2_2": 190, "3_2": 148, "2_3": 125, "3_4": 71, "1_1": 2390, "1_2": 559, "2_1": 575, "3_5": 33, "1_5": 39, "2_5": 20, "1_3": 315, "2_4": 44, "1_4": 118};
+const SEGMENTS_META = {"champions": {"name": "Champions", "color": "#e8c98a", "icon": "\ud83c\udfc6", "desc": "Compraram recentemente, frequentemente e gastaram muito"}, "loyal": {"name": "Clientes Fi\u00e9is", "color": "#4caf89", "icon": "\ud83d\udc9a", "desc": "Compram com frequ\u00eancia e gastam bem"}, "potential": {"name": "Potenciais Fi\u00e9is", "color": "#5b9bd5", "icon": "\u2b50", "desc": "Clientes recentes com potencial para fidelizar"}, "new": {"name": "Novos Clientes", "color": "#7ec8a4", "icon": "\ud83c\udd95", "desc": "Compraram pela primeira vez recentemente"}, "promising": {"name": "Promissores", "color": "#a8c8ff", "icon": "\ud83c\udf31", "desc": "Mostram interesse, ainda a crescer"}, "attention": {"name": "Precisam Aten\u00e7\u00e3o", "color": "#f0a732", "icon": "\u26a0\ufe0f", "desc": "Acima da m\u00e9dia mas a distanciar-se"}, "at_risk": {"name": "Em Risco", "color": "#e07054", "icon": "\ud83d\udd34", "desc": "Compravam muito mas n\u00e3o compram h\u00e1 algum tempo"}, "cant_lose": {"name": "N\u00e3o Perder", "color": "#c94b4b", "icon": "\ud83d\udea8", "desc": "Grandes compradores inativos \u2014 reactivar urgente"}, "hibernating": {"name": "A Hibernar", "color": "#666666", "icon": "\ud83d\ude34", "desc": "\u00daltima compra h\u00e1 muito tempo, pouca frequ\u00eancia"}, "lost": {"name": "Perdidos", "color": "#333333", "icon": "\ud83d\udc80", "desc": "Inactivos h\u00e1 muito tempo e pouco frequentes"}};
+const SEG_COUNTS = {"champions": 61, "loyal": 137, "at_risk": 82, "cant_lose": 49, "hibernating": 422, "attention": 269, "promising": 484, "potential": 104, "lost": 3524, "new": 177};
+const SEG_REVENUE = {"champions": 59735.2, "loyal": 85461.72, "at_risk": 46537.65, "cant_lose": 26021.05, "hibernating": 99257.24, "attention": 80194.73, "promising": 49841.88, "potential": 27393.85, "lost": 328584.66, "new": 18093.6};
+const TOTAL_REVENUE = 821121.58;
+const SEG_TABLE = {
+  '5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose',
+  '4_5':'champions','4_4':'loyal','4_3':'loyal','4_2':'at_risk','4_1':'cant_lose',
+  '3_5':'potential','3_4':'potential','3_3':'attention','3_2':'attention','3_1':'hibernating',
+  '2_5':'new','2_4':'promising','2_3':'promising','2_2':'hibernating','2_1':'lost',
+  '1_5':'new','1_4':'new','1_3':'promising','1_2':'lost','1_1':'lost',
+};
+
+let CUSTOMERS = [];
+let activeSegment = null;
+
+// ── Matriz ────────────────────────────────────────────────────────────────────
+function buildMatrix() {
+  const grid = document.getElementById('matrixGrid');
+  // F rows descending (5→1), R cols ascending (1→5)
+  let html = '';
+  for (let f = 5; f >= 1; f--) {
+    for (let r = 1; r <= 5; r++) {
+      const key = f+'_'+r;
+      const seg = SEG_TABLE[key] || 'lost';
+      const meta = SEGMENTS_META[seg] || {};
+      const color = meta.color || '#333';
+      const count = MATRIX_DATA[key] || 0;
+      html += `<div class="matrix-cell" style="background:${color}22;border:1px solid ${color}55;"
+        onclick="filterBySeg('${seg}')" title="${meta.name||seg}: ${count} clientes">
+        <div class="matrix-cell-count" style="color:${color}">${count}</div>
+        <div class="matrix-cell-seg">${meta.icon||''} ${(meta.name||seg).split(' ').slice(0,2).join(' ')}</div>
+      </div>`;
+    }
+  }
+  grid.innerHTML = html;
+
+  // Legend
+  const legend = document.getElementById('matrixLegend');
+  const segsInMatrix = [...new Set(Object.values(SEG_TABLE))];
+  let lhtml = '<div style="display:flex;flex-direction:column;gap:6px;">';
+  segsInMatrix.forEach(seg => {
+    const meta = SEGMENTS_META[seg] || {};
+    const color = meta.color || '#333';
+    lhtml += `<div style="display:flex;align-items:center;gap:8px;font-size:.78rem;">
+      <div style="width:12px;height:12px;border-radius:3px;background:${color};flex-shrink:0;"></div>
+      <span>${meta.icon||''} ${meta.name||seg}</span>
+      <span style="color:var(--muted);font-size:.7rem;">— ${meta.desc||''}</span>
+    </div>`;
+  });
+  lhtml += '</div>';
+  legend.innerHTML = lhtml;
+}
+
+// ── Cards de Segmentos ─────────────────────────────────────────────────────
+function buildSegCards() {
+  const container = document.getElementById('segCards');
+  const segOrder = ['champions','loyal','potential','new','promising','attention','at_risk','cant_lose','hibernating','lost'];
+  let html = '';
+  segOrder.forEach(seg => {
+    const meta = SEGMENTS_META[seg] || {};
+    const color = meta.color || '#333';
+    const count = SEG_COUNTS[seg] || 0;
+    const rev = SEG_REVENUE[seg] || 0;
+    const revPct = TOTAL_REVENUE > 0 ? (rev/TOTAL_REVENUE*100).toFixed(1) : '0';
+    html += `<div class="seg-card" id="card_${seg}" style="--card-color:${color}" onclick="filterBySeg('${seg}')">
+      <div class="seg-icon">${meta.icon||''}</div>
+      <div class="seg-name" style="color:${color}">${meta.name||seg}</div>
+      <div class="seg-count">${count.toLocaleString('pt-PT')}</div>
+      <div class="seg-rev">${rev.toLocaleString('pt-PT',{minimumFractionDigits:0,maximumFractionDigits:0})}€</div>
+      <span class="seg-pct" style="background:${color}22;color:${color}">${revPct}% receita</span>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ── Tabela ────────────────────────────────────────────────────────────────────
+function renderTable(data) {
+  const tbody = document.getElementById('tbody');
+  const html = data.map((c, idx) => {
+    const days = c.days_since;
+    let daysCls = 'days-cold', daysTxt = '—';
+    if (typeof days === 'number') {
+      daysTxt = days === 0 ? 'Hoje' : days === 1 ? 'Ontem' : days+'d atrás';
+      daysCls = days <= 30 ? 'days-hot' : days <= 90 ? 'days-warm' : 'days-cold';
+    }
+    const seg = c.rfv_segment || 'lost';
+    const meta = SEGMENTS_META[seg] || {};
+    const color = meta.color || '#555';
+    const r = c.rfv_r || 1, f = c.rfv_f || 1, v = c.rfv_v || 1;
+    return `<tr data-seg="${seg}" data-email="${c.email}" data-name="${(c.name||'').toLowerCase()}" data-score="${c.rfv_score||0}">
+      <td style="color:var(--muted);font-size:.85rem">${idx+1}</td>
+      <td>
+        <div style="font-weight:600">${c.name||c.email}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${c.email}</div>
+        ${c.city ? `<div style="font-size:.7rem;color:var(--muted)">📍 ${c.city}</div>` : ''}
+      </td>
+      <td><span class="rfv-badge r-badge">${r}</span> <span class="rfv-badge f-badge">${f}</span> <span class="rfv-badge v-badge">${v}</span></td>
+      <td><span class="score-badge">${c.rfv_score||0}/15</span></td>
+      <td>
+        <div class="gold">${c.total_spent.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})}€</div>
+        <div class="sub">${c.total_orders} enc.</div>
+      </td>
+      <td><span class="${daysCls}">${daysTxt}</span><div class="sub">${c.last_order||''}</div></td>
+      <td><span class="seg-pill" style="background:${color}22;color:${color}">${meta.icon||''} ${meta.name||seg}</span></td>
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = html;
+}
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('#tbody tr');
+  let visible = 0;
+  rows.forEach(row => {
+    const email = row.dataset.email||'';
+    const name = row.dataset.name||'';
+    const seg = row.dataset.seg||'';
+    const matchQ = !q || email.includes(q) || name.includes(q);
+    const matchSeg = !activeSegment || seg === activeSegment;
+    const show = matchQ && matchSeg;
+    row.classList.toggle('hidden', !show);
+    if (show) visible++;
+  });
+  document.getElementById('cnt').textContent = visible+' cliente'+(visible!==1?'s':'');
+}
+
+function filterBySeg(seg) {
+  if (activeSegment === seg) {
+    activeSegment = null;
+    document.querySelectorAll('.seg-card').forEach(c => c.classList.remove('active'));
+  } else {
+    activeSegment = seg;
+    document.querySelectorAll('.seg-card').forEach(c => c.classList.toggle('active', c.id==='card_'+seg));
+  }
+  applyFilters();
+}
+
+function clearSegFilter(btn) {
+  activeSegment = null;
+  document.querySelectorAll('.seg-card').forEach(c => c.classList.remove('active'));
+  applyFilters();
+}
+
+// ── Export CSV ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const rows = [...document.querySelectorAll('#tbody tr:not(.hidden)')];
+  const headers = ['email','name','rfv_r','rfv_f','rfv_v','rfv_score','rfv_segment','total_orders','total_spent','last_order','days_since','city'];
+  const lines = [headers];
+  rows.forEach(row => {
+    const email = row.dataset.email;
+    const c = CUSTOMERS.find(x => x.email === email);
+    if (!c) return;
+    lines.push([
+      c.email, c.name||'', c.rfv_r, c.rfv_f, c.rfv_v, c.rfv_score, c.rfv_segment,
+      c.total_orders, c.total_spent.toFixed(2), c.last_order||'',
+      typeof c.days_since==='number'?c.days_since:'', c.city||''
+    ].map(v => { const s=String(v??''); return s.includes(',')||s.includes('"')?'"'+s.replace(/"/g,'""')+'"':s; }));
+  });
+  const csv = '\uFEFF'+lines.map(r=>r.join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  const d = new Date(); a.download = `cavemen_rfv_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.csv`;
+  a.click();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildMatrix();
+buildSegCards();
+
+fetch('/api/crm/rfv')
+  .then(r => r.json())
+  .then(data => {
+    CUSTOMERS = data;
+    renderTable(data);
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('tbl').style.display = '';
+    document.getElementById('cnt').textContent = data.length+' clientes';
+  })
+  .catch(e => {
+    document.getElementById('loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados. Verifica se o servidor está a correr em localhost:5001</div>';
+  });
+</script>
+</body>
+</html>

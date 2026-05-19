@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cavemen Store — Relatório de Produtos</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --card: #1a1a22;
+    --card2: #22222e;
+    --border: #2e2e3e;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --text: #e8e8f0;
+    --muted: #8888a8;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --blue: #38bdf8;
+    --yellow: #fbbf24;
+    --store-gm: #6c63ff;
+    --store-br: #ff6584;
+    --store-po: #38bdf8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* ─── HEADER ─── */
+  .header { padding: 18px 24px; background: var(--card); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header-title { font-size: 18px; font-weight: 700; }
+  .header-title span { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  .header-nav a { color: var(--muted); text-decoration: none; margin-left: 16px; font-size: 13px; }
+  .header-nav a:hover { color: var(--text); }
+
+  /* ─── CONTROLS ─── */
+  .controls { padding: 14px 24px; background: var(--card2); border-bottom: 1px solid var(--border);
+              display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .sep { color: var(--border); }
+  .date-label { color: var(--muted); font-size: 12px; }
+  .date-input { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
+                background: var(--card); color: var(--text); font-size: 12px; cursor: pointer; }
+  .gran-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .gran-btn { padding: 5px 12px; background: transparent; color: var(--muted); cursor: pointer;
+              font-size: 12px; border: none; transition: all .15s; }
+  .gran-btn.active { background: var(--accent); color: #fff; }
+  .apply-btn { padding: 5px 14px; background: var(--accent); color: #fff; border: none;
+               border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+               transition: opacity .15s; }
+  .apply-btn:hover { opacity: .85; }
+  .loading { color: var(--muted); font-size: 12px; display: none; }
+  .loading.show { display: block; }
+  .filter-select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px;
+                   background: var(--card2); color: var(--text); font-size: 13px; cursor: pointer; }
+  .compare-dates { color: var(--muted); font-size: 11px; font-style: italic; }
+
+  /* ─── PERIOD BOXES ─── */
+  .period-box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border);
+                border-radius: 8px; padding: 6px 12px; background: rgba(26,26,34,0.5); }
+  .period-label { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 10px;
+                  font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+                  background: #8b7355; color: #fff; }
+  .period-label-b { background: #6b6355; }
+  .compare-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted);
+                   cursor: pointer; user-select: none; white-space: nowrap; }
+  .compare-check input[type="checkbox"] { accent-color: #8b7355; width: 14px; height: 14px; cursor: pointer; }
+  .reset-btn { padding: 5px 14px; background: transparent; color: var(--muted); border: 1px solid var(--border);
+               border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+               transition: all .15s; }
+  .reset-btn:hover { color: var(--text); border-color: var(--accent); }
+  .period-b { border-color: #6b6355; }
+
+  /* ─── MAIN GRID ─── */
+  .main { padding: 20px 24px; max-width: 1600px; }
+
+  /* ─── KPI CARDS ─── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .kpi-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-value { font-size: 28px; font-weight: 700; margin: 6px 0 2px; }
+  .kpi-sub { color: var(--muted); font-size: 12px; }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.blue  { color: var(--blue); }
+  .kpi-value.yellow { color: var(--yellow); }
+  .kpi-value.purple { color: var(--accent); }
+
+  /* ─── CHARTS ─── */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .charts-row-full { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 14px;
+                 display: flex; align-items: center; justify-content: space-between; }
+  .chart-wrap { position: relative; }
+  .chart-wrap canvas { max-height: 280px; }
+
+  /* ─── STORE + CATEGORY ROW ─── */
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+  /* ─── TABLE ─── */
+  .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .table-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .search-input { padding: 7px 12px; border: 1px solid var(--border); border-radius: 6px;
+                  background: var(--card2); color: var(--text); font-size: 13px; flex: 1; min-width: 180px; }
+  .search-input::placeholder { color: var(--muted); }
+  .table-info { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase;
+             letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--border);
+             cursor: pointer; user-select: none; white-space: nowrap; }
+  thead th:hover { color: var(--text); }
+  thead th.sort-asc::after  { content: " ▲"; }
+  thead th.sort-desc::after { content: " ▼"; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: var(--card2); }
+  td { padding: 9px 12px; font-size: 13px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.muted { color: var(--muted); font-size: 12px; }
+  tfoot tr { border-top: 2px solid var(--accent); background: rgba(108,99,255,.08); }
+  tfoot td { padding: 11px 12px; font-size: 13px; font-weight: 700; color: var(--text); }
+  tfoot td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tfoot-label { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); font-weight: 700; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-cat { background: rgba(108,99,255,.18); color: var(--accent); }
+
+  /* Store mini bars */
+  .store-bars { display: flex; gap: 2px; align-items: center; }
+  .store-dot { width: 6px; height: 6px; border-radius: 50%; opacity: .5; }
+  .store-dot.active { opacity: 1; width: 8px; height: 8px; }
+  .store-dot.gm { background: var(--store-gm); }
+  .store-dot.br { background: var(--store-br); }
+  .store-dot.po { background: var(--store-po); }
+
+  .load-more { display: block; width: 100%; padding: 10px; text-align: center; background: var(--card2);
+               border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer;
+               margin-top: 12px; font-size: 13px; transition: all .15s; }
+  .load-more:hover { color: var(--text); border-color: var(--accent); }
+  .no-data { text-align: center; padding: 40px; color: var(--muted); }
+
+  /* ─── STORE BREAKDOWN ─── */
+  .store-list { display: flex; flex-direction: column; gap: 10px; }
+  .store-row { display: flex; align-items: center; gap: 10px; }
+  .store-name { width: 90px; font-size: 13px; }
+  .store-bar-wrap { flex: 1; background: var(--card2); border-radius: 4px; height: 8px; overflow: hidden; }
+  .store-bar-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+  .store-bar-fill.gm { background: var(--store-gm); }
+  .store-bar-fill.br { background: var(--store-br); }
+  .store-bar-fill.po { background: var(--store-po); }
+  .store-val { width: 90px; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .store-pct { width: 36px; text-align: right; font-size: 12px; color: var(--muted); }
+
+  /* ─── CHANGE BADGES ─── */
+  .change { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 6px;
+            border-radius: 4px; margin-left: 4px; }
+  .change.up   { background: rgba(74,222,128,.15); color: #4ade80; }
+  .change.down { background: rgba(248,113,113,.15); color: #f87171; }
+  .change.flat { background: rgba(136,136,168,.1);  color: #8888a8; }
+  .change.new  { background: rgba(108,99,255,.15);  color: #a78bfa; font-size: 10px; }
+  .kpi-change { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .kpi-prev   { color: var(--muted); font-size: 11px; }
+  .store-change { font-size: 11px; font-weight: 600; width: 55px; text-align: right; }
+
+  /* ─── RESPONSIVE: TABLET ─── */
+  @media (max-width: 900px) {
+    .charts-row, .row2 { grid-template-columns: 1fr; }
+    .main { padding: 14px 12px; }
+  }
+
+  /* ─── RESPONSIVE: MOBILE ─── */
+  @media (max-width: 640px) {
+    body { font-size: 13px; }
+
+    /* Header */
+    .header { padding: 12px 14px; flex-direction: column; align-items: flex-start; gap: 6px; }
+    .header-title { font-size: 16px; }
+    .header-title span { display: block; margin-left: 0; margin-top: 2px; font-size: 12px; }
+    .header-nav { width: 100%; }
+    .header-nav a { margin-left: 0; margin-right: 12px; }
+
+    /* Controls */
+    .controls { padding: 10px 14px; flex-direction: column; align-items: stretch; gap: 8px; }
+    .period-box { flex-wrap: wrap; padding: 8px 10px; gap: 6px; }
+    .period-label { font-size: 9px; padding: 3px 8px; }
+    .date-input { font-size: 13px; padding: 6px 8px; flex: 1; min-width: 0; }
+    .compare-check { font-size: 12px; padding: 4px 0; }
+    .controls > div:last-child { flex-wrap: wrap; margin-left: 0 !important; gap: 6px; }
+    .filter-select { flex: 1; min-width: 0; font-size: 12px; }
+    .gran-toggle { flex-shrink: 0; }
+    .gran-btn { padding: 6px 10px; font-size: 11px; }
+    .apply-btn { flex: 1; padding: 8px 12px; font-size: 13px; }
+    .reset-btn { padding: 8px 12px; font-size: 13px; }
+
+    /* Main */
+    .main { padding: 10px 10px; }
+
+    /* KPI Cards */
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .kpi-card { padding: 12px; }
+    .kpi-label { font-size: 9px; }
+    .kpi-value { font-size: 20px; margin: 4px 0 2px; }
+    .kpi-sub { font-size: 11px; }
+    .kpi-prev { font-size: 10px; }
+
+    /* Charts */
+    .charts-row, .charts-row-full { margin-bottom: 14px; gap: 10px; }
+    .charts-row { grid-template-columns: 1fr; }
+    .chart-card { padding: 12px; }
+    .chart-title { font-size: 12px; margin-bottom: 10px; }
+    .chart-wrap canvas { max-height: 220px; }
+
+    /* Store + Category row */
+    .row2 { grid-template-columns: 1fr; gap: 10px; margin-bottom: 14px; }
+    .store-name { width: 70px; font-size: 12px; }
+    .store-val { width: 65px; font-size: 12px; }
+    .store-pct { width: 30px; font-size: 11px; }
+    .store-change { width: 50px; font-size: 10px; }
+
+    /* Products table */
+    .table-card { padding: 10px; }
+    .table-controls { gap: 6px; margin-bottom: 10px; }
+    .search-input { min-width: 0; flex: 1 1 100%; font-size: 13px; padding: 8px 10px; }
+    table { font-size: 12px; }
+    thead th { padding: 6px 6px; font-size: 9px; letter-spacing: 0; }
+    td { padding: 6px 6px; font-size: 12px; }
+    /* Hide less critical columns on mobile */
+    th[data-col="avg_price"], td:nth-child(7),
+    th[data-col="stores"], td:nth-child(8) { display: none; }
+    .badge { font-size: 9px; padding: 2px 5px; }
+    .badge-cat { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .change { font-size: 9px; padding: 1px 4px; margin-left: 2px; }
+    .load-more { font-size: 12px; padding: 8px; }
+  }
+
+  /* ─── RESPONSIVE: SMALL MOBILE ─── */
+  @media (max-width: 380px) {
+    .kpi-grid { grid-template-columns: 1fr; gap: 6px; }
+    .kpi-value { font-size: 22px; }
+    .period-box { flex-direction: column; align-items: stretch; }
+    .period-label { align-self: flex-start; }
+    .date-input { width: 100%; }
+    /* Hide category column too on very small screens */
+    th[data-col="category_name"], td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">🪨 Cavemen Store <span>— Relatório de Produtos</span></div>
+  <div class="header-nav" style="display:flex;align-items:center;gap:16px;">
+    <a href="/">← Dashboard Principal</a>
+    <button onclick="exportCSV()" style="padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">⬇ Exportar CSV</button>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="period-box">
+    <span class="period-label">PERÍODO A</span>
+    <span class="date-label">DE</span>
+    <input type="date" id="dateFrom" class="date-input">
+    <span class="date-label">ATÉ</span>
+    <input type="date" id="dateTo" class="date-input">
+  </div>
+
+  <label class="compare-check">
+    <input type="checkbox" id="compareToggle">
+    Comparar com Período B
+  </label>
+
+  <div class="period-box period-b" id="periodBBox" style="display:none">
+    <span class="period-label period-label-b">PERÍODO B</span>
+    <span class="date-label">DE</span>
+    <input type="date" id="compareFrom" class="date-input">
+    <span class="date-label">ATÉ</span>
+    <input type="date" id="compareTo" class="date-input">
+  </div>
+
+  <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+    <select class="filter-select" id="globalStoreFilter" style="font-size:12px;padding:5px 10px;">
+      <option value="">Todas as lojas</option>
+      <option value="Guimarães">Guimarães</option>
+      <option value="Braga">Braga</option>
+      <option value="Porto">Porto</option>
+    </select>
+    <div class="gran-toggle">
+      <button class="gran-btn" data-gran="day">Dia</button>
+      <button class="gran-btn active" data-gran="week">Semana</button>
+      <button class="gran-btn" data-gran="month">Mês</button>
+    </div>
+    <button class="apply-btn" id="applyBtn">&#9654; Aplicar</button>
+    <button class="reset-btn" id="resetBtn">&#8635; Reset</button>
+    <span class="loading" id="loadingMsg">A carregar...</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card">
+      <div class="kpi-label">Receita Total (c/ IVA)</div>
+      <div class="kpi-value green" id="kpiRevenue">—</div>
+      <div class="kpi-sub" id="kpiRevSub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Unidades Vendidas</div>
+      <div class="kpi-value blue" id="kpiQty">—</div>
+      <div class="kpi-sub" id="kpiQtySub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Ticket Médio por Produto</div>
+      <div class="kpi-value yellow" id="kpiTicket">—</div>
+      <div class="kpi-sub" id="kpiTicketSub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Produtos Únicos Vendidos</div>
+      <div class="kpi-value purple" id="kpiUnique">—</div>
+      <div class="kpi-sub" id="kpiUniqueSub">—</div>
+    </div>
+  </div>
+
+  <!-- Revenue over time (full width) -->
+  <div class="charts-row-full">
+    <div class="chart-card">
+      <div class="chart-title">
+        <span>Receita ao Longo do Tempo</span>
+        <span id="revenueGranLabel" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="revenueTimeChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top 10 Products (horizontal bar) + Category donut -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title"><span>Top 10 Produtos por Receita</span></div>
+      <div class="chart-wrap"><canvas id="top10Chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span>Receita por Categoria</span></div>
+      <div class="chart-wrap" style="display:flex;align-items:center;justify-content:center;">
+        <canvas id="catChart" style="max-height:280px;max-width:280px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Breakdown + Category Table -->
+  <div class="row2">
+    <div class="chart-card">
+      <div class="chart-title"><span>Receita por Loja</span></div>
+      <div id="storeBreakdown" class="store-list" style="padding-top:8px;"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span>Categorias</span></div>
+      <div id="catTableWrap"></div>
+    </div>
+  </div>
+
+  <!-- Products Table -->
+  <div class="table-card">
+    <div class="chart-title">
+      <span>Todos os Produtos</span>
+      <button id="exportCsvBtn" onclick="exportCSV()" style="padding:5px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;">
+        ⬇ Exportar CSV
+      </button>
+    </div>
+    <div class="table-controls">
+      <input type="text" class="search-input" id="searchInput" placeholder="Pesquisar produto ou referência...">
+      <select class="filter-select" id="catFilter">
+        <option value="">Todas as categorias</option>
+      </select>
+      <select class="filter-select" id="storeFilter">
+        <option value="">Todas as lojas</option>
+        <option value="Guimarães">Guimarães</option>
+        <option value="Braga">Braga</option>
+        <option value="Porto">Porto</option>
+      </select>
+      <span class="table-info" id="tableInfo"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th data-col="rank" style="width:36px">#</th>
+            <th data-col="name">Produto</th>
+            <th data-col="category_name">Categoria</th>
+            <th data-col="revenue" class="sort-desc">Receita</th>
+            <th data-col="rev_change" class="col-compare">Comparação</th>
+            <th data-col="qty">Unid.</th>
+            <th data-col="avg_price">Preço Médio</th>
+            <th data-col="stores">Lojas</th>
+          </tr>
+        </thead>
+        <tbody id="productsTbody"></tbody>
+        <tfoot id="productsTfoot"></tfoot>
+      </table>
+    </div>
+    <button class="load-more" id="loadMoreBtn" style="display:none">Ver mais produtos</button>
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let allProducts = [];
+let filteredProducts = [];
+let visibleCount = 50;
+let sortCol = "revenue";
+let sortDir = -1;
+let granularity = "week";
+let currentData = null;
+
+const STORE_COLORS = {
+  "Guimarães": "#6c63ff",
+  "Braga":     "#ff6584",
+  "Porto":     "#38bdf8",
+};
+const STORE_CSS = { "Guimarães": "gm", "Braga": "br", "Porto": "po" };
+const CAT_PALETTE = [
+  "#6c63ff","#ff6584","#38bdf8","#4ade80","#fbbf24",
+  "#f472b6","#34d399","#fb923c","#a78bfa","#60a5fa",
+  "#f87171","#2dd4bf","#e879f9","#facc15","#94a3b8",
+];
+
+// ─── DATE HELPERS ─────────────────────────────────────────────────────────────
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+function firstOfMonth(offset = 0) {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + offset);
+  return d.toISOString().slice(0, 10);
+}
+function fmtDatePt(dateStr) {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function isCompareActive() {
+  return document.getElementById("compareToggle").checked;
+}
+
+function autoFillPeriodB() {
+  const from = document.getElementById("dateFrom").value;
+  const to = document.getElementById("dateTo").value;
+  if (!from || !to) return;
+  const fromDt = new Date(from);
+  const toDt = new Date(to);
+  fromDt.setFullYear(fromDt.getFullYear() - 1);
+  toDt.setFullYear(toDt.getFullYear() - 1);
+  document.getElementById("compareFrom").value = fromDt.toISOString().slice(0, 10);
+  document.getElementById("compareTo").value = toDt.toISOString().slice(0, 10);
+}
+
+function togglePeriodB() {
+  const on = isCompareActive();
+  document.getElementById("periodBBox").style.display = on ? "flex" : "none";
+  if (on) autoFillPeriodB();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  const dateFrom = document.getElementById("dateFrom");
+  const dateTo   = document.getElementById("dateTo");
+
+  dateFrom.value = firstOfMonth(0);
+  dateTo.value   = today();
+
+  // Granularity
+  document.querySelectorAll(".gran-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".gran-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      granularity = btn.dataset.gran;
+    });
+  });
+
+  document.getElementById("applyBtn").addEventListener("click", loadData);
+  document.getElementById("globalStoreFilter").addEventListener("change", loadData);
+
+  // Compare toggle: show/hide Period B, auto-fill dates
+  document.getElementById("compareToggle").addEventListener("change", () => {
+    togglePeriodB();
+    loadData();
+  });
+
+  // When Period A dates change and comparison is ON, auto-update Period B
+  dateFrom.addEventListener("change", () => { if (isCompareActive()) autoFillPeriodB(); });
+  dateTo.addEventListener("change", () => { if (isCompareActive()) autoFillPeriodB(); });
+
+  // Reset button
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    dateFrom.value = firstOfMonth(0);
+    dateTo.value = today();
+    document.getElementById("compareToggle").checked = false;
+    togglePeriodB();
+    document.getElementById("globalStoreFilter").value = "";
+    // Reset granularity to week
+    document.querySelectorAll(".gran-btn").forEach(b => b.classList.remove("active"));
+    document.querySelector('.gran-btn[data-gran="week"]').classList.add("active");
+    granularity = "week";
+    loadData();
+  });
+
+  // Table controls
+  document.getElementById("searchInput").addEventListener("input", applyFilters);
+  document.getElementById("catFilter").addEventListener("change", applyFilters);
+  document.getElementById("storeFilter").addEventListener("change", applyFilters);
+  document.getElementById("loadMoreBtn").addEventListener("click", () => {
+    visibleCount += 50;
+    renderTable();
+  });
+
+  document.querySelectorAll("thead th[data-col]").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.col;
+      if (col === "rank" || col === "stores") return;
+      if (sortCol === col) {
+        sortDir = -sortDir;
+      } else {
+        sortCol = col;
+        sortDir = -1;
+      }
+      document.querySelectorAll("thead th").forEach(t => {
+        t.classList.remove("sort-asc", "sort-desc");
+      });
+      th.classList.add(sortDir === -1 ? "sort-desc" : "sort-asc");
+      applyFilters();
+    });
+  });
+
+  loadData();
+});
+
+// ─── LOAD DATA ────────────────────────────────────────────────────────────────
+let revenueTimeChart = null;
+let top10Chart = null;
+let catChart   = null;
+
+async function loadData() {
+  const from = document.getElementById("dateFrom").value;
+  const to   = document.getElementById("dateTo").value;
+  const loading = document.getElementById("loadingMsg");
+  loading.classList.add("show");
+
+  try {
+    const storeF = document.getElementById("globalStoreFilter").value;
+    let url = `/api/products?from=${from}&to=${to}&granularity=${granularity}`;
+    if (storeF) url += `&store=${encodeURIComponent(storeF)}`;
+    if (isCompareActive()) {
+      const cFrom = document.getElementById("compareFrom").value;
+      const cTo = document.getElementById("compareTo").value;
+      if (cFrom && cTo) url += `&compare_from=${cFrom}&compare_to=${cTo}`;
+    }
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("API error " + resp.status);
+    const data = await resp.json();
+    currentData = data;
+
+    if (!data.has_v2_data) {
+      showNoData();
+      return;
+    }
+
+    // Update header with store filter info
+    const storeLabel = data.store_filter ? ' — ' + data.store_filter : '';
+    document.querySelector('.header-title span').textContent = '— Relatório de Produtos' + storeLabel;
+
+    // When global store filter is active, reset and hide table-level store filter
+    const tableStoreEl = document.getElementById("storeFilter");
+    if (data.store_filter) {
+      tableStoreEl.value = "";
+      tableStoreEl.style.display = "none";
+    } else {
+      tableStoreEl.style.display = "";
+    }
+
+    renderKPIs(data);
+    renderRevenueTime(data);
+    renderTop10(data);
+    renderCategoryDonut(data);
+    renderStoreBreakdown(data);
+    renderCategoryTable(data);
+    populateCatFilter(data.categories);
+
+    allProducts = data.products;
+    visibleCount = 50;
+    applyFilters();
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById("productsTbody").innerHTML =
+      '<tr><td colspan="8" class="no-data">Erro ao carregar dados. Verifica se o servidor está a correr.</td></tr>';
+  } finally {
+    loading.classList.remove("show");
+  }
+}
+
+function showNoData() {
+  document.getElementById("productsTbody").innerHTML =
+    '<tr><td colspan="8" class="no-data">Ainda sem dados de produtos v2.<br>Corre: <code>python3 extract_products.py</code></td></tr>';
+}
+
+// ─── FORMAT ───────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return new Intl.NumberFormat("pt-PT", {minimumFractionDigits:2, maximumFractionDigits:2}).format(n) + "€";
+}
+function fmtShort(n) {
+  if (n >= 1000) return (n/1000).toFixed(1) + "k€";
+  return fmt(n);
+}
+function changeBadge(pct, label) {
+  if (pct === null || pct === undefined) return '<span class="change new">NOVO</span>';
+  const cls = pct > 0 ? "up" : pct < 0 ? "down" : "flat";
+  const arrow = pct > 0 ? "▲" : pct < 0 ? "▼" : "—";
+  const txt = (label ? label + " " : "") + arrow + " " + Math.abs(pct).toFixed(1) + "%";
+  return '<span class="change ' + cls + '">' + txt + '</span>';
+}
+
+function getCompareValues(data) {
+  if (!isCompareActive() || !data.compare_from) return null;
+  return {
+    label: fmtDatePt(data.compare_from).slice(3) + "-" + fmtDatePt(data.compare_to).slice(3),
+    revChange: data.compare_rev_change,
+    qtyChange: data.compare_qty_change,
+    prevRev: data.compare_total_revenue,
+    prevQty: data.compare_total_qty,
+  };
+}
+
+// ─── KPIs ─────────────────────────────────────────────────────────────────────
+function renderKPIs(data) {
+  const c = getCompareValues(data);
+
+  document.getElementById("kpiRevenue").textContent = fmt(data.total_revenue);
+  if (c) {
+    document.getElementById("kpiRevSub").innerHTML =
+      changeBadge(c.revChange, c.label) +
+      '<div class="kpi-prev">comparacao: ' + fmtShort(c.prevRev) + '</div>';
+  } else {
+    document.getElementById("kpiRevSub").innerHTML = '<div class="kpi-prev">' + data.period_days + ' dias</div>';
+  }
+
+  document.getElementById("kpiQty").textContent = Math.round(data.total_qty).toLocaleString("pt-PT");
+  if (c) {
+    document.getElementById("kpiQtySub").innerHTML =
+      changeBadge(c.qtyChange, c.label) +
+      '<div class="kpi-prev">comparacao: ' + Math.round(c.prevQty).toLocaleString("pt-PT") + '</div>';
+  } else {
+    document.getElementById("kpiQtySub").innerHTML = '<div class="kpi-prev">' + data.period_days + ' dias</div>';
+  }
+
+  const ticket = data.total_qty > 0 ? (data.total_revenue / data.total_qty) : 0;
+  document.getElementById("kpiTicket").textContent = fmt(ticket);
+  if (c) {
+    const prevTicket = c.prevQty > 0 ? (c.prevRev / c.prevQty) : 0;
+    const ticketChg = prevTicket > 0 ? Math.round((ticket - prevTicket) / prevTicket * 1000) / 10 : null;
+    document.getElementById("kpiTicketSub").innerHTML =
+      changeBadge(ticketChg, c.label) +
+      '<div class="kpi-prev">comparacao: ' + fmt(prevTicket) + '</div>';
+  } else {
+    document.getElementById("kpiTicketSub").innerHTML = '<div class="kpi-prev">preco medio por unidade</div>';
+  }
+
+  document.getElementById("kpiUnique").textContent = data.unique_products.toLocaleString("pt-PT");
+  document.getElementById("kpiUniqueSub").textContent = data.period_days + " dias selecionados";
+
+}
+
+// ─── REVENUE OVER TIME (BAR CHART) ──────────────────────────────────────────
+function renderRevenueTime(data) {
+  const ctx = document.getElementById("revenueTimeChart").getContext("2d");
+  const buckets = data.buckets || [];
+  const granLabels = { day: "Diário", week: "Semanal", month: "Mensal" };
+  document.getElementById("revenueGranLabel").textContent = granLabels[data.granularity] || "";
+
+  // Aggregate revenue per bucket across all products
+  const bucketRevenue = {};
+  buckets.forEach(b => bucketRevenue[b] = 0);
+  (data.products || []).forEach(p => {
+    if (p.trend) {
+      buckets.forEach(b => {
+        bucketRevenue[b] += (p.trend[b] || 0);
+      });
+    }
+  });
+
+  const values = buckets.map(b => bucketRevenue[b]);
+  const avg = values.length > 0 ? values.reduce((a,b) => a+b, 0) / values.length : 0;
+
+  if (revenueTimeChart) revenueTimeChart.destroy();
+  revenueTimeChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: buckets.map(b => {
+        // Format labels nicely
+        if (data.granularity === "day") {
+          const parts = b.split("-");
+          return parts[2] + "/" + parts[1];
+        }
+        return b;
+      }),
+      datasets: [
+        {
+          label: "Receita",
+          data: values,
+          backgroundColor: values.map(v => v >= avg ? "rgba(108,99,255,0.7)" : "rgba(108,99,255,0.35)"),
+          borderColor: "rgba(108,99,255,0.9)",
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+        {
+          label: "Média",
+          data: values.map(() => avg),
+          type: "line",
+          borderColor: "rgba(251,191,36,0.6)",
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.datasetIndex === 1) return "  Média: " + fmt(ctx.parsed.y);
+              return "  Receita: " + fmt(ctx.parsed.y);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: "#8888a8", font: {size:10}, maxTicksLimit: 20 },
+             grid: { display: false } },
+        y: { ticks: { color: "#8888a8", font: {size:10},
+                       callback: v => fmtShort(v) },
+             grid: { color: "#2e2e3e" } }
+      }
+    }
+  });
+}
+
+// ─── TOP 10 PRODUCTS (HORIZONTAL BAR) ────────────────────────────────────────
+function renderTop10(data) {
+  const ctx = document.getElementById("top10Chart").getContext("2d");
+  const top10 = data.products.slice(0, 10).reverse();
+  const comparing = isCompareActive() && data.compare_from;
+
+  const labels = top10.map(p => p.name.length > 30 ? p.name.slice(0, 30) + "..." : p.name);
+  const revenues = top10.map(p => p.revenue);
+
+  const datasets = [
+    {
+      label: "Periodo atual",
+      data: revenues,
+      backgroundColor: "rgba(108,99,255,0.8)",
+      borderColor: "rgba(108,99,255,1)",
+      borderWidth: 1,
+      borderRadius: 3,
+    }
+  ];
+
+  if (comparing) {
+    const compareRevenues = top10.map(p => p.compare_revenue || 0);
+    datasets.push({
+      label: "Periodo B",
+      data: compareRevenues,
+      backgroundColor: "rgba(136,136,168,0.3)",
+      borderColor: "rgba(136,136,168,0.5)",
+      borderWidth: 1,
+      borderRadius: 3,
+    });
+  }
+
+  if (top10Chart) top10Chart.destroy();
+  top10Chart = new Chart(ctx, {
+    type: "bar",
+    data: { labels, datasets },
+    options: {
+      indexAxis: "y",
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color: "#8888a8", font: { size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => "  " + ctx.dataset.label + ": " + fmt(ctx.parsed.x),
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: "#8888a8", font: {size:10}, callback: v => fmtShort(v) },
+             grid: { color: "#2e2e3e" } },
+        y: { ticks: { color: "#e8e8f0", font: {size:11} },
+             grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ─── CATEGORY DONUT ───────────────────────────────────────────────────────────
+function renderCategoryDonut(data) {
+  const ctx = document.getElementById("catChart").getContext("2d");
+  const cats = data.categories.slice(0, 10);
+  if (catChart) catChart.destroy();
+  catChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: cats.map(c => c.name),
+      datasets: [{
+        data: cats.map(c => c.revenue),
+        backgroundColor: CAT_PALETTE.slice(0, cats.length),
+        borderColor: "#1a1a22",
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      cutout: "60%",
+      plugins: {
+        legend: { position: "bottom", labels: { color: "#8888a8", font: {size:11}, boxWidth:12, padding:8 } },
+        tooltip: { callbacks: { label: ctx => " " + ctx.label + ": " + fmt(ctx.parsed) } }
+      }
+    }
+  });
+}
+
+// ─── STORE BREAKDOWN ──────────────────────────────────────────────────────────
+function renderStoreBreakdown(data) {
+  const container = document.getElementById("storeBreakdown");
+  const stores = ["Guimarães", "Braga", "Porto"];
+  const totals = data.store_totals;
+  const maxRev = Math.max(...stores.map(s => (totals[s] || {}).revenue || 0), 1);
+  const grandTotal = stores.reduce((a, s) => a + ((totals[s] || {}).revenue || 0), 0);
+  const comparing = isCompareActive() && data.compare_from;
+
+  container.innerHTML = stores.map(s => {
+    const t = totals[s] || {revenue:0, qty:0, orders:0};
+    const pct = grandTotal > 0 ? Math.round(t.revenue / grandTotal * 100) : 0;
+    const width = Math.round(t.revenue / maxRev * 100);
+    const cls = STORE_CSS[s];
+    const chgHtml = comparing ? `<div class="store-change" style="display:flex;gap:4px;flex-wrap:wrap;">${changeBadge(t.compare_rev_change)}</div>` : '';
+    return `
+      <div class="store-row">
+        <div class="store-name">${s}</div>
+        <div class="store-bar-wrap">
+          <div class="store-bar-fill ${cls}" style="width:${width}%"></div>
+        </div>
+        <div class="store-val">${fmtShort(t.revenue)}</div>
+        <div class="store-pct">${pct}%</div>
+        ${chgHtml}
+      </div>`;
+  }).join("");
+}
+
+// ─── CATEGORY TABLE ───────────────────────────────────────────────────────────
+function renderCategoryTable(data) {
+  const wrap = document.getElementById("catTableWrap");
+  const total = data.total_revenue || 1;
+  const cats = data.categories;
+  const thStyle = "text-align:left;font-size:11px;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--border)";
+  const thStyleR = thStyle.replace("left","right");
+  const tdStyle = "padding:7px 8px;font-size:13px;border-bottom:1px solid var(--border)";
+  const tdStyleR = tdStyle + ";text-align:right;font-variant-numeric:tabular-nums";
+  const tdStyleM = tdStyle + ";text-align:right;font-size:12px;color:var(--muted)";
+  const comparing = isCompareActive() && data.compare_from;
+
+  const compColHeader = comparing ? `<th style="${thStyleR}">Per. B</th>` : '';
+
+  wrap.innerHTML = `
+    <div style="max-height:420px;overflow-y:auto;">
+    <table style="width:100%">
+      <thead><tr>
+        <th style="${thStyle}">Categoria</th>
+        <th style="${thStyleR}">Receita</th>
+        ${compColHeader}
+        <th style="${thStyleR}">%</th>
+      </tr></thead>
+      <tbody>
+        ${cats.map(c => {
+          const compCol = comparing ? `<td style="${tdStyleR}">${changeBadge(c.compare_rev_change)}</td>` : '';
+          return `<tr>
+            <td style="${tdStyle}">${c.name}</td>
+            <td style="${tdStyleR}">${fmtShort(c.revenue)}</td>
+            ${compCol}
+            <td style="${tdStyleM}">${Math.round(c.revenue/total*100)}%</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    </div>`;
+}
+
+// ─── CAT FILTER ───────────────────────────────────────────────────────────────
+function populateCatFilter(categories) {
+  const sel = document.getElementById("catFilter");
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todas as categorias</option>';
+  categories.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.name;
+    opt.textContent = c.name + " (" + c.unique_products + ")";
+    sel.appendChild(opt);
+  });
+  sel.value = current;
+}
+
+// ─── TABLE FILTER + SORT ──────────────────────────────────────────────────────
+function applyFilters() {
+  const search   = document.getElementById("searchInput").value.toLowerCase().trim();
+  const catF     = document.getElementById("catFilter").value;
+  const storeF   = document.getElementById("storeFilter").value;
+  const globalStoreActive = !!(currentData && currentData.store_filter);
+
+  filteredProducts = allProducts.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search) && !p.reference.toLowerCase().includes(search)) return false;
+    if (catF && p.category_name !== catF) return false;
+    if (storeF && !globalStoreActive) {
+      const sv = (p.by_store || {})[storeF];
+      if (!sv || sv.revenue <= 0) return false;
+    }
+    return true;
+  });
+
+  filteredProducts.sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (va === null && vb === null) return 0;
+    if (va === null) return 1;
+    if (vb === null) return -1;
+    if (va === undefined) va = 0;
+    if (vb === undefined) vb = 0;
+    if (typeof va === "string") return sortDir * va.localeCompare(vb, "pt");
+    return sortDir * (va - vb);
+  });
+
+  document.getElementById("tableInfo").textContent =
+    filteredProducts.length + " produto" + (filteredProducts.length !== 1 ? "s" : "");
+
+  visibleCount = 50;
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById("productsTbody");
+  const slice = filteredProducts.slice(0, visibleCount);
+  const totalRev = currentData ? currentData.total_revenue : 1;
+  const comparing = isCompareActive() && currentData && currentData.compare_from;
+
+  // Show/hide comparison column header
+  const compTh = document.querySelector(".col-compare");
+  if (compTh) {
+    compTh.style.display = comparing ? "" : "none";
+    if (comparing) compTh.textContent = "Per. B";
+  }
+
+  const colCount = comparing ? 8 : 7;
+
+  tbody.innerHTML = slice.map((p, i) => {
+    const stores = ["Guimarães","Braga","Porto"];
+    const dots = stores.map(s => {
+      const sv = (p.by_store || {})[s];
+      const active = sv && sv.revenue > 0 ? " active" : "";
+      return `<div class="store-dot ${STORE_CSS[s]}${active}" title="${s}: ${sv ? fmt(sv.revenue) : '0\u20ac'}"></div>`;
+    }).join("");
+    const pct = totalRev > 0 ? (p.revenue / totalRev * 100).toFixed(1) : "0.0";
+
+    let compTd = '';
+    if (comparing) {
+      const chg = p.compare_rev_change;
+      const compRev = p.compare_revenue || 0;
+      const compInfo = compRev > 0 ? fmtShort(compRev) : "";
+      compTd = `<td class="num">
+        ${changeBadge(chg)}
+        ${compInfo ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + compInfo + '</div>' : ''}
+      </td>`;
+    }
+
+    return `<tr>
+      <td class="muted num">${i + 1}</td>
+      <td>
+        <div style="font-weight:500">${escHtml(p.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${escHtml(p.reference)}</div>
+      </td>
+      <td><span class="badge badge-cat">${escHtml(p.category_name)}</span></td>
+      <td class="num">
+        <div>${fmt(p.revenue)}</div>
+        <div style="font-size:11px;color:var(--muted)">${pct}% do total</div>
+      </td>
+      ${compTd}
+      <td class="num">${Math.round(p.qty).toLocaleString("pt-PT")}</td>
+      <td class="num">${fmt(p.avg_price)}</td>
+      <td><div class="store-bars">${dots}</div></td>
+    </tr>`;
+  }).join("");
+
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="${colCount}" class="no-data">Nenhum produto encontrado.</td></tr>`;
+  }
+
+  // ── Totals footer — only shown when a category or search filter is active
+  const tfoot = document.getElementById("productsTfoot");
+  const searchActive = document.getElementById("searchInput").value.trim().length > 0;
+  const catActive    = document.getElementById("catFilter").value !== "";
+  const filterActive = searchActive || catActive;
+
+  if (filterActive && filteredProducts.length > 0) {
+    const totalFilteredRev = filteredProducts.reduce((s, p) => s + (p.revenue || 0), 0);
+    const totalFilteredQty = filteredProducts.reduce((s, p) => s + (p.qty || 0), 0);
+    const avgPrice = totalFilteredQty > 0 ? totalFilteredRev / totalFilteredQty : 0;
+    const pctOfTotal = currentData && currentData.total_revenue > 0
+      ? (totalFilteredRev / currentData.total_revenue * 100).toFixed(1)
+      : "—";
+    const emptyTd = comparing ? `<td></td>` : "";
+    tfoot.innerHTML = `<tr>
+      <td></td>
+      <td><span class="tfoot-label">Total seleção</span><div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">${filteredProducts.length} produto${filteredProducts.length !== 1 ? "s" : ""}</div></td>
+      <td></td>
+      <td class="num">
+        <div style="font-size:15px">${fmt(totalFilteredRev)}</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:400">${pctOfTotal}% do total geral</div>
+      </td>
+      ${emptyTd}
+      <td class="num" style="font-size:15px">${Math.round(totalFilteredQty).toLocaleString("pt-PT")}</td>
+      <td class="num">${avgPrice > 0 ? fmt(avgPrice) : "—"}</td>
+      <td></td>
+    </tr>`;
+  } else {
+    tfoot.innerHTML = "";
+  }
+
+  const loadMore = document.getElementById("loadMoreBtn");
+  loadMore.style.display = filteredProducts.length > visibleCount ? "block" : "none";
+  loadMore.textContent = `Ver mais (${filteredProducts.length - visibleCount} restantes)`;
+}
+
+function escHtml(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ─── EXPORT CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!filteredProducts.length) { alert("Sem produtos para exportar."); return; }
+
+  const from = document.getElementById("dateFrom").value;
+  const to   = document.getElementById("dateTo").value;
+  const compareActive = isCompareActive();
+  const compareFrom = compareActive ? document.getElementById("compareFrom").value : "";
+  const compareTo   = compareActive ? document.getElementById("compareTo").value   : "";
+
+  const STORES = ["Guimarães", "Braga", "Porto"];
+
+  // Header
+  let headers = ["Rank","Produto","Referência","Categoria","Receita (€)","Unidades","Preço Médio (€)","%_do_Total"];
+  if (compareActive) headers = headers.concat(["Receita_Comparação (€)", "Variação (%)"]);
+  headers = headers.concat(STORES.map(s => "Receita_" + s + " (€)"));
+
+  const totalRev = currentData ? currentData.total_revenue : 1;
+
+  const rows = filteredProducts.map((p, i) => {
+    const pct = totalRev > 0 ? (p.revenue / totalRev * 100).toFixed(1) : "0.0";
+    const row = [
+      i + 1,
+      '"' + (p.name || "").replace(/"/g, '""') + '"',
+      '"' + (p.reference || "").replace(/"/g, '""') + '"',
+      '"' + (p.category_name || "").replace(/"/g, '""') + '"',
+      p.revenue.toFixed(2),
+      Math.round(p.qty),
+      p.avg_price.toFixed(2),
+      pct,
+    ];
+    if (compareActive) {
+      const compRev = p.compare_revenue != null ? p.compare_revenue : "";
+      const compChg = p.compare_rev_change != null ? p.compare_rev_change.toFixed(1) : "";
+      row.push(compRev !== "" ? Number(compRev).toFixed(2) : "");
+      row.push(compChg);
+    }
+    STORES.forEach(s => {
+      const sv = (p.by_store || {})[s];
+      row.push(sv ? sv.revenue.toFixed(2) : "0.00");
+    });
+    return row.join(",");
+  });
+
+  // Build file content
+  let csv = "﻿"; // BOM for Excel UTF-8
+  csv += "Relatório Cavemen Store\n";
+  csv += "Período A: " + from + " a " + to + "\n";
+  if (compareActive) csv += "Período B: " + compareFrom + " a " + compareTo + "\n";
+  csv += "\n";
+  csv += headers.join(",") + "\n";
+  csv += rows.join("\n");
+
+  // Download
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url;
+  a.download = "cavemen_produtos_" + from + "_" + to + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

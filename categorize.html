@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cavemen Store — Produtos Sem Categoria</title>
+<style>
+  :root {
+    --bg: #0f0f13; --card: #1a1a22; --card2: #22222e; --border: #2e2e3e;
+    --accent: #6c63ff; --text: #e8e8f0; --muted: #8888a8;
+    --green: #4ade80; --orange: #fb923c; --blue: #38bdf8; --yellow: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--text); font-size: 14px; }
+
+  .header { padding: 18px 24px; background: var(--card); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header-title { font-size: 18px; font-weight: 700; }
+  .header-title span { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  .header-nav a { color: var(--muted); text-decoration: none; margin-left: 16px; font-size: 13px; }
+  .header-nav a:hover { color: var(--text); }
+
+  .main { padding: 20px 24px; max-width: 1400px; }
+
+  /* KPIs */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .kpi-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-value { font-size: 26px; font-weight: 700; margin: 6px 0 2px; }
+  .kpi-sub { color: var(--muted); font-size: 12px; }
+
+  /* Category sections */
+  .cat-section { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+                 padding: 18px; margin-bottom: 16px; }
+  .cat-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+                padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .cat-header:hover { opacity: .85; }
+  .cat-name { font-size: 16px; font-weight: 600; }
+  .cat-badge { display: inline-block; padding: 3px 10px; border-radius: 5px; font-size: 12px;
+               font-weight: 600; background: rgba(108,99,255,.18); color: var(--accent); margin-left: 10px; }
+  .cat-stats { display: flex; gap: 20px; font-size: 13px; color: var(--muted); }
+  .cat-stats .val { color: var(--text); font-weight: 600; }
+  .cat-toggle { font-size: 18px; color: var(--muted); transition: transform .2s; }
+  .cat-toggle.open { transform: rotate(90deg); }
+
+  .cat-products { display: none; padding-top: 12px; }
+  .cat-products.show { display: block; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase;
+             color: var(--muted); border-bottom: 1px solid var(--border); letter-spacing: .5px; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: var(--card2); }
+  td { padding: 8px 10px; font-size: 13px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .no-match { background: rgba(251,191,36,.08); border-color: rgba(251,191,36,.3); }
+  .no-match .cat-name { color: var(--yellow); }
+
+  .search-bar { margin-bottom: 20px; display: flex; gap: 12px; align-items: center; }
+  .search-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px;
+                  background: var(--card); color: var(--text); font-size: 13px; flex: 1; max-width: 400px; }
+  .search-input::placeholder { color: var(--muted); }
+
+  .info-box { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+              padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .info-box strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">🪨 Cavemen Store <span>— Produtos Sem Categoria</span></div>
+  <div class="header-nav">
+    <a href="/products">← Relatório de Produtos</a>
+    <a href="/">Dashboard</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="info-box">
+    <strong>O que e este relatório?</strong> Analisa os <strong>941 produtos "Sem Categoria"</strong> no Moloni
+    e sugere automaticamente a categoria correta com base no nome do produto.
+    Estas sugestões <strong>não alteram</strong> os dados do relatório principal — servem apenas como guia
+    para atualizar as categorias diretamente no Moloni.
+  </div>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="search-bar">
+    <input type="text" class="search-input" id="searchInput" placeholder="Pesquisar produto...">
+    <span id="searchInfo" style="color:var(--muted);font-size:12px;"></span>
+  </div>
+
+  <div id="categoriesContainer"></div>
+</div>
+
+<script>
+let data = null;
+
+async function loadData() {
+  const resp = await fetch("/api/categorize_suggestions");
+  data = await resp.json();
+  renderKPIs();
+  renderCategories();
+}
+
+function fmt(n) {
+  return new Intl.NumberFormat("pt-PT", {minimumFractionDigits:2, maximumFractionDigits:2}).format(n) + "\u20AC";
+}
+
+function renderKPIs() {
+  const grid = document.getElementById("kpiGrid");
+  const totalCats = Object.keys(data.categorias).length;
+  grid.innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Total Sem Categoria</div>
+      <div class="kpi-value" style="color:var(--yellow)">${data.total_sem_categoria}</div>
+      <div class="kpi-sub">produtos no Moloni</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Sugestao Encontrada</div>
+      <div class="kpi-value" style="color:var(--green)">${data.total_sugeridos}</div>
+      <div class="kpi-sub">${Math.round(data.total_sugeridos/data.total_sem_categoria*100)}% mapeados</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Categorias Sugeridas</div>
+      <div class="kpi-value" style="color:var(--accent)">${totalCats}</div>
+      <div class="kpi-sub">categorias existentes</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Receita Mapeada</div>
+      <div class="kpi-value" style="color:var(--green)">${fmt(data.receita_sugeridos)}</div>
+      <div class="kpi-sub">de ${fmt(data.receita_sugeridos + data.receita_sem_sugestao)} total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Sem Sugestao</div>
+      <div class="kpi-value" style="color:var(--orange)">${data.total_sem_sugestao}</div>
+      <div class="kpi-sub">${fmt(data.receita_sem_sugestao)}</div>
+    </div>
+  `;
+}
+
+function renderCategories(filter = "") {
+  const container = document.getElementById("categoriesContainer");
+  let html = "";
+  const filterLc = filter.toLowerCase();
+
+  // Render each suggested category
+  for (const [catName, catData] of Object.entries(data.categorias)) {
+    const prods = filterLc
+      ? catData.produtos.filter(p => p.name.toLowerCase().includes(filterLc) || p.reference.toLowerCase().includes(filterLc))
+      : catData.produtos;
+    if (filterLc && prods.length === 0) continue;
+
+    const revTotal = prods.reduce((a, p) => a + p.revenue, 0);
+    html += `
+    <div class="cat-section" data-cat="${esc(catName)}">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <div>
+          <span class="cat-name">${esc(catName)}</span>
+          <span class="cat-badge">${prods.length} produtos</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;">
+          <div class="cat-stats">
+            <span>Receita: <span class="val">${fmt(revTotal)}</span></span>
+            <span>Unid.: <span class="val">${prods.reduce((a,p) => a + p.qty, 0)}</span></span>
+          </div>
+          <span class="cat-toggle">▶</span>
+        </div>
+      </div>
+      <div class="cat-products">
+        <table>
+          <thead><tr>
+            <th style="width:36px">#</th>
+            <th>Produto</th>
+            <th>Referência</th>
+            <th style="text-align:right">Receita</th>
+            <th style="text-align:right">Unid.</th>
+          </tr></thead>
+          <tbody>
+            ${prods.map((p, i) => `<tr>
+              <td style="color:var(--muted);font-size:12px;">${i+1}</td>
+              <td style="font-weight:500;">${esc(p.name)}</td>
+              <td style="color:var(--muted);font-size:12px;">${esc(p.reference)}</td>
+              <td class="num">${fmt(p.revenue)}</td>
+              <td class="num">${p.qty}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  // Render unmatched
+  const unmatched = filterLc
+    ? data.sem_sugestao.filter(p => p.name.toLowerCase().includes(filterLc) || p.reference.toLowerCase().includes(filterLc))
+    : data.sem_sugestao;
+  if (unmatched.length > 0) {
+    html += `
+    <div class="cat-section no-match">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <div>
+          <span class="cat-name">Sem Sugestao</span>
+          <span class="cat-badge" style="background:rgba(251,191,36,.18);color:var(--yellow);">${unmatched.length} produtos</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;">
+          <div class="cat-stats">
+            <span>Receita: <span class="val">${fmt(unmatched.reduce((a,p) => a + p.revenue, 0))}</span></span>
+          </div>
+          <span class="cat-toggle">▶</span>
+        </div>
+      </div>
+      <div class="cat-products">
+        <table>
+          <thead><tr>
+            <th style="width:36px">#</th>
+            <th>Produto</th>
+            <th>Referência</th>
+            <th style="text-align:right">Receita</th>
+            <th style="text-align:right">Unid.</th>
+          </tr></thead>
+          <tbody>
+            ${unmatched.map((p, i) => `<tr>
+              <td style="color:var(--muted);font-size:12px;">${i+1}</td>
+              <td style="font-weight:500;">${esc(p.name)}</td>
+              <td style="color:var(--muted);font-size:12px;">${esc(p.reference)}</td>
+              <td class="num">${fmt(p.revenue)}</td>
+              <td class="num">${p.qty}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+
+  // Update search info
+  const totalShown = Object.values(data.categorias).reduce((a, c) => {
+    const fp = filterLc ? c.produtos.filter(p => p.name.toLowerCase().includes(filterLc) || p.reference.toLowerCase().includes(filterLc)) : c.produtos;
+    return a + fp.length;
+  }, 0) + unmatched.length;
+  document.getElementById("searchInfo").textContent = filterLc ? totalShown + " resultados" : "";
+}
+
+function toggleCat(headerEl) {
+  const products = headerEl.nextElementSibling;
+  const toggle = headerEl.querySelector(".cat-toggle");
+  products.classList.toggle("show");
+  toggle.classList.toggle("open");
+}
+
+function esc(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadData();
+  document.getElementById("searchInput").addEventListener("input", e => {
+    renderCategories(e.target.value);
+  });
+});
+</script>
+</body>
+</html>
