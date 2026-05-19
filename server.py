@@ -645,6 +645,36 @@ def api_crm_refresh():
 def api_crm_status():
     return jsonify(_crm_refresh_status)
 
+@app.route("/api/crm/test_pontos")
+def api_crm_test_pontos():
+    """Testa a API de pontos do Magento — descobre o endpoint correto."""
+    import requests as _req
+    mag_url  = os.environ.get("MAGENTO_URL",  "https://www.cavemenstore.com")
+    mag_user = os.environ.get("MAGENTO_USER", "marketing@cavemenstore.com")
+    mag_pass = os.environ.get("MAGENTO_PASS", "")
+    results  = {}
+    try:
+        r = _req.post(f"{mag_url}/rest/V1/integration/admin/token",
+                      json={"username": mag_user, "password": mag_pass}, timeout=30)
+        r.raise_for_status()
+        token = r.json()
+        H = {"Authorization": f"Bearer {token}"}
+        endpoints = [
+            "/reward/search?searchCriteria[pageSize]=1",
+            "/reward/mine",
+            "/rewardPoints/mine",
+            "/customerBalance/mine",
+        ]
+        for ep in endpoints:
+            try:
+                resp = _req.get(f"{mag_url}/rest/V1{ep}", headers=H, timeout=15)
+                results[ep] = {"status": resp.status_code, "body": resp.json() if resp.ok else resp.text[:200]}
+            except Exception as e:
+                results[ep] = {"error": str(e)}
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    return jsonify(results)
+
 @app.route("/api/crm/reload")
 def api_crm_reload():
     """Recarrega dados do Neon para memória sem correr crm_clientes.py."""
