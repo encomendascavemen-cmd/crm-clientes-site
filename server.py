@@ -629,6 +629,33 @@ def api_crm_refresh():
 def api_crm_status():
     return jsonify(_crm_refresh_status)
 
+@app.route("/api/crm/debug")
+def api_crm_debug():
+    """Debug endpoint: testa ligação ao Neon e devolve estado."""
+    db_url = os.environ.get("DATABASE_URL", "")
+    result = {
+        "DATABASE_URL_set": bool(db_url),
+        "DATABASE_URL_prefix": db_url[:30] + "..." if db_url else "",
+        "psycopg2_ok": _PSYCOPG2_OK,
+        "crm_customers_count": len(_crm_customers),
+        "crm_lite_count": len(_crm_lite),
+        "neon_test": None,
+        "neon_error": None,
+    }
+    try:
+        conn = _neon_conn()
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT key, octet_length(value::text) FROM kv_store")
+                rows = cur.fetchall()
+            conn.close()
+            result["neon_test"] = {r[0]: f"{r[1]//1024} KB" for r in rows}
+        else:
+            result["neon_test"] = "connection failed"
+    except Exception as e:
+        result["neon_error"] = str(e)
+    return jsonify(result)
+
 @app.route("/api/crm/lite")
 def api_crm_lite():
     """Lista leve de todos os clientes (sem orders/products) — servida da memória."""
