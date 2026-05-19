@@ -661,13 +661,19 @@ def api_crm_debug():
     try:
         conn = _neon_conn()
         if conn:
-            rows = conn.run("SELECT key, octet_length(value) FROM kv_store")
+            rows = conn.run("SELECT key, octet_length(value::text) FROM kv_store")
             conn.close()
             result["neon_test"] = {r[0]: f"{r[1]//1024} KB" for r in rows}
         else:
             result["neon_test"] = "connection failed"
     except Exception as e:
         result["neon_error"] = str(e)
+    # Test neon_load directly
+    try:
+        loaded = neon_load("crm_data")
+        result["neon_load_test"] = f"ok: {len(loaded)} items" if isinstance(loaded, list) else f"returned: {type(loaded).__name__} = {str(loaded)[:100]}"
+    except Exception as e:
+        result["neon_load_test"] = f"exception: {e}"
     return jsonify(result)
 
 @app.route("/api/crm/lite")
