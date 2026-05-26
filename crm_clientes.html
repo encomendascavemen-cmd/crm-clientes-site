@@ -172,7 +172,6 @@ thead th.sorted{color:var(--gold);}
 .guide-score{font-weight:700;font-size:.82rem;width:36px;text-align:center;}
 .guide-range{color:var(--muted);width:120px;}
 .guide-desc{color:var(--text);}
-.guide-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0;}
 .guide-seg-table{width:100%;border-collapse:collapse;font-size:.73rem;}
 .guide-seg-table tr{border-bottom:1px solid var(--border);}
 .guide-seg-table tr:last-child{border-bottom:none;}
@@ -186,10 +185,6 @@ thead th.sorted{color:var(--gold);}
 .matrix-x-title{text-align:center;font-size:.7rem;color:var(--muted);margin-top:4px;}
 .matrix-y-title{font-size:.7rem;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;padding-right:6px;}
 .matrix-grid{display:grid;grid-template-columns:repeat(5,90px);grid-template-rows:repeat(5,76px);gap:0;}
-.matrix-cell{border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s,box-shadow .1s;position:relative;}
-.matrix-cell:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:2;}
-.matrix-cell-count{font-size:1.1rem;font-weight:700;color:rgba(255,255,255,.9);}
-.matrix-cell-seg{font-size:.55rem;color:rgba(255,255,255,.65);text-align:center;margin-top:2px;line-height:1.2;padding:0 4px;}
 .seg-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:32px;}
 .seg-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;overflow:hidden;}
 .seg-card:hover,.seg-card.active{border-color:var(--card-color,var(--accent));}
@@ -217,7 +212,7 @@ thead th.sorted{color:var(--gold);}
 
 <header>
   <div class="logo">CAVEMEN <span>· CRM</span></div>
-  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 19/05/2026 10:51 · 5,309 clientes</div>
+  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 26/05/2026 13:03 · 5,324 clientes</div>
   <div style="display:flex;gap:8px;margin-left:auto;">
     <button class="refresh-btn" id="btnRefresh" onclick="refreshCRM(false)" title="Atualiza usando cache (rápido)">↻ Atualizar</button>
     <button class="refresh-btn refresh-full" id="btnFull" onclick="refreshCRM(true)" title="Vai buscar dados novos ao Magento (~2 min)">⬇ Dados Novos</button>
@@ -296,7 +291,7 @@ thead th.sorted{color:var(--gold);}
 <div id="tab-rfv" style="display:none">
 
 <div class="stats-4">
-  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">5,309</div><div class="stat-s">com encomendas válidas</div></div>
+  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">5,324</div><div class="stat-s">com encomendas válidas</div></div>
   <div class="stat"><div class="stat-l">Champions + Fiéis</div><div class="stat-v" id="rfv-s-champ">—</div><div class="stat-s" id="rfv-s-champ-s">calculando…</div></div>
   <div class="stat"><div class="stat-l">Em Risco + Não Perder</div><div class="stat-v" id="rfv-s-risk">—</div><div class="stat-s">reactivar urgente</div></div>
   <div class="stat"><div class="stat-l">Receita Champions</div><div class="stat-v" id="rfv-s-rev">—</div><div class="stat-s">segmento topo</div></div>
@@ -456,43 +451,38 @@ thead th.sorted{color:var(--gold);}
 
 </div><!-- /tab-rfv -->
 
-<!-- ═══════════════════════════════════════════════ TAB: PONTOS ═══ -->
+<!-- ═══════════════════════════════════════════════ TAB: PONTOS ════ -->
 <div id="tab-pontos" style="display:none">
-
-<div class="stats-4" id="pontos-stats">
-  <div class="stat"><div class="stat-l">Clientes com pontos</div><div class="stat-v" id="pontos-s-total">…</div><div class="stat-s">saldo positivo</div></div>
-  <div class="stat"><div class="stat-l">Pontos em circulação</div><div class="stat-v" id="pontos-s-balance">…</div><div class="stat-s">total disponível</div></div>
-  <div class="stat"><div class="stat-l">Média por cliente</div><div class="stat-v" id="pontos-s-avg">…</div><div class="stat-s">pontos disponíveis</div></div>
-  <div class="stat"><div class="stat-l">Pts de compras</div><div class="stat-v" id="pontos-s-earned">…</div><div class="stat-s">ganhos por compras online</div></div>
-</div>
-
-<div class="controls">
-  <div class="search"><input type="text" id="pontosSearch" placeholder="Pesquisar por nome ou email…" oninput="pontosApplyFilter()"></div>
-  <span class="cnt" id="pontos-cnt">A carregar…</span>
-</div>
-
-<div class="tbl-wrap">
-  <div id="pontos-loadingMsg" style="text-align:center;padding:60px;color:var(--muted);">
-    <div class="spin" style="font-size:2rem">⟳</div>
-    <div style="margin-top:12px;font-size:.9rem">A carregar pontos…</div>
+  <div class="stats-4" id="pontos-stats" style="padding:24px 28px 0">
+    <div class="stat"><div class="stat-l">Clientes com pontos</div><div class="stat-v" id="pontos-s-total">…</div></div>
+    <div class="stat"><div class="stat-l">Pontos em circulação</div><div class="stat-v" id="pontos-s-balance">…</div></div>
+    <div class="stat"><div class="stat-l">Média por cliente</div><div class="stat-v" id="pontos-s-avg">…</div></div>
+    <div class="stat"><div class="stat-l">Pts de compras</div><div class="stat-v" id="pontos-s-earned">…</div></div>
   </div>
-  <table id="pontos-tbl" style="display:none">
-    <thead><tr>
-      <th onclick="pontosSortTbl(0)">#</th>
-      <th onclick="pontosSortTbl(1)">Cliente</th>
-      <th onclick="pontosSortTbl(2)" class="sorted" id="pontos-th-balance">Pontos Disponíveis ↓</th>
-      <th onclick="pontosSortTbl(3)" title="Pontos disponíveis + pontos já usados = total alguma vez recebido">Total Recebido</th>
-      <th onclick="pontosSortTbl(4)" title="Pontos ganhos apenas através de compras online">Pts de Compras</th>
-      <th onclick="pontosSortTbl(5)">Pontos Usados</th>
-      <th onclick="pontosSortTbl(6)" title="Apenas vendas online (Magento). Compras em loja física não incluídas.">Gasto Online</th>
-      <th onclick="pontosSortTbl(7)">Encomendas</th>
-      <th onclick="pontosSortTbl(8)">Última Compra</th>
-      <th onclick="pontosSortTbl(9)">Cidade</th>
-    </tr></thead>
-    <tbody id="pontos-tbody"></tbody>
-  </table>
-</div>
-
+  <div style="padding:16px 28px 8px;display:flex;gap:10px;align-items:center">
+    <input id="pontos-search" type="search" placeholder="Pesquisar cliente…" oninput="pontosApplyFilter()" style="padding:8px 14px;background:#1a1a1a;border:1px solid #2e2e2e;border-radius:6px;color:#e0e0e0;font-size:.82rem;width:240px;">
+    <span id="pontos-cnt" style="color:#666;font-size:.8rem;margin-left:4px"></span>
+  </div>
+  <div style="padding:0 28px 32px;overflow-x:auto">
+    <div id="pontos-loadingMsg" style="color:#666;padding:40px 0;text-align:center">A carregar pontos…</div>
+    <table id="pontos-tbl" style="display:none;width:100%;border-collapse:collapse;font-size:.82rem">
+      <thead>
+        <tr style="border-bottom:1px solid #2e2e2e;color:#888">
+          <th style="padding:10px 8px;text-align:left;width:36px">#</th>
+          <th onclick="pontosSortTbl(1)" style="padding:10px 8px;text-align:left;cursor:pointer">Cliente</th>
+          <th onclick="pontosSortTbl(2)" id="pontos-sort-2" style="padding:10px 8px;text-align:right;cursor:pointer;color:var(--gold)">Pontos Disponíveis ↓</th>
+          <th onclick="pontosSortTbl(3)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Pontos disponíveis + pontos já usados = total alguma vez recebido">Total Recebido</th>
+          <th onclick="pontosSortTbl(4)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Pontos ganhos apenas através de compras online">Pts de Compras</th>
+          <th onclick="pontosSortTbl(5)" style="padding:10px 8px;text-align:right;cursor:pointer">Pontos Usados</th>
+          <th onclick="pontosSortTbl(6)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Apenas vendas online (Magento). Compras em loja física não incluídas.">Gasto Online</th>
+          <th onclick="pontosSortTbl(7)" style="padding:10px 8px;text-align:right;cursor:pointer">Encomendas</th>
+          <th onclick="pontosSortTbl(8)" style="padding:10px 8px;text-align:right;cursor:pointer">Última Compra</th>
+          <th onclick="pontosSortTbl(9)" style="padding:10px 8px;text-align:left;cursor:pointer">Cidade</th>
+        </tr>
+      </thead>
+      <tbody id="pontos-tbody"></tbody>
+    </table>
+  </div>
 </div><!-- /tab-pontos -->
 
 <!-- Profile Modal -->
@@ -512,17 +502,15 @@ thead th.sorted{color:var(--gold);}
 </div>
 
 <script>
-const STATS = {"total_customers": 5309, "total_revenue": 821122.0, "total_orders": 9924, "avg_order": 82.74, "recurring": 1888, "top10_revenue": 24159.0, "top10_pct": 2.9, "recurring_pct": 36.0, "generated_at": "19/05/2026 10:51"};
+const STATS = {"total_customers": 5324, "total_revenue": 825041.0, "total_orders": 9967, "avg_order": 82.78, "recurring": 1897, "top10_revenue": 24159.0, "top10_pct": 2.9, "recurring_pct": 36.0, "generated_at": "26/05/2026 13:03"};
 const STATUS_COLORS = {"complete": "#4caf89", "processing": "#5b9bd5", "closed": "#888", "canceled": "#e05454", "pending": "#f0a732", "holded": "#888", "pending_payment": "#f0a732"};
 const STATUS_LABELS = {"complete": "Completa", "processing": "Em processo", "closed": "Fechada", "canceled": "Cancelada", "pending": "Pendente", "holded": "Em espera", "pending_payment": "Pag. pendente"};
-const MATRIX_DATA = {"5_4": 20, "5_3": 18, "5_5": 12, "4_3": 77, "4_5": 29, "4_2": 73, "5_1": 6, "3_1": 232, "3_3": 121, "4_4": 42, "5_2": 9, "4_1": 43, "2_2": 190, "3_2": 148, "2_3": 125, "3_4": 71, "1_1": 2390, "1_2": 559, "2_1": 575, "3_5": 33, "1_5": 39, "2_5": 20, "1_3": 315, "2_4": 44, "1_4": 118};
+const MATRIX_DATA = {"5_4": 18, "5_3": 20, "5_5": 15, "4_3": 72, "4_5": 30, "4_2": 78, "5_1": 6, "3_1": 237, "3_3": 122, "4_4": 40, "4_1": 44, "2_2": 188, "5_2": 7, "3_2": 144, "3_4": 74, "1_1": 2417, "1_2": 542, "2_1": 582, "3_5": 32, "2_5": 22, "1_4": 117, "2_4": 41, "2_3": 125, "1_3": 309, "1_5": 42};
 const SEGMENTS_META = {"champions": {"name": "Champions", "color": "#e8c98a", "icon": "\ud83c\udfc6", "desc": "Compraram recentemente, frequentemente e gastaram muito"}, "loyal": {"name": "Clientes Fi\u00e9is", "color": "#4caf89", "icon": "\ud83d\udc9a", "desc": "Compram com frequ\u00eancia e gastam bem"}, "potential": {"name": "Potenciais Fi\u00e9is", "color": "#5b9bd5", "icon": "\u2b50", "desc": "Clientes recentes com potencial para fidelizar"}, "new": {"name": "Novos Clientes", "color": "#7ec8a4", "icon": "\ud83c\udd95", "desc": "Compraram pela primeira vez recentemente"}, "promising": {"name": "Promissores", "color": "#a8c8ff", "icon": "\ud83c\udf31", "desc": "Mostram interesse, ainda a crescer"}, "attention": {"name": "Precisam Aten\u00e7\u00e3o", "color": "#f0a732", "icon": "\u26a0\ufe0f", "desc": "Acima da m\u00e9dia mas a distanciar-se"}, "at_risk": {"name": "Em Risco", "color": "#e07054", "icon": "\ud83d\udd34", "desc": "Compravam muito mas n\u00e3o compram h\u00e1 algum tempo"}, "cant_lose": {"name": "N\u00e3o Perder", "color": "#c94b4b", "icon": "\ud83d\udea8", "desc": "Grandes compradores inativos \u2014 reactivar urgente"}, "hibernating": {"name": "A Hibernar", "color": "#666666", "icon": "\ud83d\ude34", "desc": "\u00daltima compra h\u00e1 muito tempo, pouca frequ\u00eancia"}, "lost": {"name": "Perdidos", "color": "#333333", "icon": "\ud83d\udc80", "desc": "Inactivos h\u00e1 muito tempo e pouco frequentes"}};
 const SEG_TABLE = {'5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose','4_5':'champions','4_4':'loyal','4_3':'loyal','4_2':'at_risk','4_1':'cant_lose','3_5':'potential','3_4':'potential','3_3':'attention','3_2':'attention','3_1':'hibernating','2_5':'new','2_4':'promising','2_3':'promising','2_2':'hibernating','2_1':'lost','1_5':'new','1_4':'new','1_3':'promising','1_2':'lost','1_1':'lost'};
 let CUSTOMERS = [];
 let RFV_CUSTOMERS = [];
-let PONTOS_CUSTOMERS = [];
 let rfvLoaded = false;
-let pontosLoaded = false;
 let activeFilter = 'all';
 let activeSegment = null;
 
@@ -573,6 +561,97 @@ function switchTab(tab, btn) {
   if (tab === 'pontos' && !pontosLoaded) loadPontos();
 }
 
+// ── Pontos: globals ───────────────────────────────────────────────────────────
+let PONTOS_ALL = [];
+let pontos_filtered = [];
+let pontosLoaded = false;
+let pontosSortCol = 2;
+let pontosSortAsc = false;
+
+// ── Pontos: carregamento ──────────────────────────────────────────────────────
+function loadPontos() {
+  fetch('/api/crm/pontos')
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      PONTOS_ALL = data;
+      pontosLoaded = true;
+      // stats
+      const fmtN = n => n.toLocaleString('pt-PT');
+      const totalBalance = data.reduce((s,c) => s + (c.point_balance||0), 0);
+      const totalEarned  = data.reduce((s,c) => s + (c.point_earned||0), 0);
+      document.getElementById('pontos-s-total').textContent   = fmtN(data.length);
+      document.getElementById('pontos-s-balance').textContent = fmtN(totalBalance);
+      document.getElementById('pontos-s-avg').textContent     = data.length ? fmtN(Math.round(totalBalance/data.length)) : '0';
+      document.getElementById('pontos-s-earned').textContent  = fmtN(totalEarned);
+      pontosApplyFilter();
+      document.getElementById('pontos-loadingMsg').style.display = 'none';
+      document.getElementById('pontos-tbl').style.display = '';
+    })
+    .catch(e => {
+      document.getElementById('pontos-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar pontos: '+e.message+'</div>';
+    });
+}
+
+function pontosSortTbl(col) {
+  if (pontosSortCol === col) { pontosSortAsc = !pontosSortAsc; }
+  else { pontosSortCol = col; pontosSortAsc = col === 1 || col === 9 || col === 8; }
+  pontosRenderTable(pontos_filtered);
+}
+
+function pontosApplyFilter() {
+  const q = (document.getElementById('pontos-search').value || '').toLowerCase();
+  pontos_filtered = q ? PONTOS_ALL.filter(c =>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.email||'').toLowerCase().includes(q) ||
+    (c.city||'').toLowerCase().includes(q)
+  ) : PONTOS_ALL.slice();
+  document.getElementById('pontos-cnt').textContent = pontos_filtered.length + ' clientes';
+  pontosRenderTable(pontos_filtered);
+}
+
+function pontosRenderTable(data) {
+  const sorted = data.slice().sort((a, b) => {
+    let va, vb;
+    switch(pontosSortCol) {
+      case 1: va = (a.name||'').toLowerCase(); vb = (b.name||'').toLowerCase(); break;
+      case 2: va = a.point_balance||0; vb = b.point_balance||0; break;
+      case 3: va = (a.point_balance||0)+(a.point_spent||0); vb = (b.point_balance||0)+(b.point_spent||0); break;
+      case 4: va = a.point_earned||0; vb = b.point_earned||0; break;
+      case 5: va = a.point_spent||0; vb = b.point_spent||0; break;
+      case 6: va = a.total_spent||0; vb = b.total_spent||0; break;
+      case 7: va = a.orders||0; vb = b.orders||0; break;
+      case 8: va = a.last_order||''; vb = b.last_order||''; break;
+      case 9: va = (a.city||'').toLowerCase(); vb = (b.city||'').toLowerCase(); break;
+      default: va = 0; vb = 0;
+    }
+    if (va < vb) return pontosSortAsc ? -1 : 1;
+    if (va > vb) return pontosSortAsc ? 1 : -1;
+    return 0;
+  });
+  const fmtN = n => n.toLocaleString('pt-PT');
+  const rows = sorted.map((c, i) => {
+    const totalReceived = (c.point_balance||0) + (c.point_spent||0);
+    return `<tr style="border-bottom:1px solid #1e1e1e">
+      <td style="padding:9px 8px;color:#555">${i+1}</td>
+      <td style="padding:9px 8px">
+        <div style="font-weight:600;color:#e0e0e0">${c.name||'—'}</div>
+        <div style="color:#555;font-size:.77rem">${c.email||''}</div>
+      </td>
+      <td style="padding:9px 8px;text-align:right;color:var(--gold);font-weight:700">${fmtN(c.point_balance||0)}</td>
+      <td style="padding:9px 8px;text-align:right;color:#a0c0e0">${fmtN(totalReceived)}</td>
+      <td style="padding:9px 8px;text-align:right;color:#888">${fmtN(c.point_earned||0)}</td>
+      <td style="padding:9px 8px;text-align:right;color:#888">${fmtN(c.point_spent||0)}</td>
+      <td style="padding:9px 8px;text-align:right">${(c.total_spent||0).toFixed(2)}€</td>
+      <td style="padding:9px 8px;text-align:right">${c.orders||0}</td>
+      <td style="padding:9px 8px;text-align:right;color:#666">${c.last_order||'—'}</td>
+      <td style="padding:9px 8px;color:#888">${c.city||'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pontos-tbody').innerHTML = rows;
+  document.getElementById('pontos-cnt').textContent = sorted.length + ' clientes';
+}
+
 // ── RFV: Carregamento lazy ────────────────────────────────────────────────────
 function loadRFV() {
   buildMatrix();
@@ -612,7 +691,6 @@ function loadRFV() {
 function buildMatrix() {
   const grid = document.getElementById('matrixGrid');
 
-  // Célula âncora (onde aparece o label) para cada segmento
   const ANCHORS = {
     champions:   {f:5, r:5},
     loyal:       {f:4, r:3},
@@ -626,7 +704,6 @@ function buildMatrix() {
     lost:        {f:1, r:1},
   };
 
-  // Total de clientes e contagem por segmento
   const total = Object.values(MATRIX_DATA).reduce((a,b) => a+b, 0);
   const segCounts = {};
   for (const [key, count] of Object.entries(MATRIX_DATA)) {
@@ -681,7 +758,6 @@ function buildMatrix() {
   }
   grid.innerHTML = html;
 
-  // Legenda compacta (só cores + nomes)
   const legend = document.getElementById('matrixLegend');
   const segsOrdered = ['champions','loyal','potential','new','promising','attention','at_risk','cant_lose','hibernating','lost'];
   let lhtml = '<div style="display:flex;flex-direction:column;gap:5px;">';
@@ -1166,113 +1242,6 @@ function exportCSV() {
   const d    = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   a.href = url; a.download = `cavemen_crm_clientes_${d}.csv`; a.click();
   URL.revokeObjectURL(url);
-}
-
-// \u2500\u2500 Pontos: Carregamento lazy \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function loadPontos() {
-  fetch('/api/crm/pontos')
-    .then(r => r.json())
-    .then(data => {
-      PONTOS_CUSTOMERS = data;
-      pontosLoaded = true;
-      pontosRenderTable(data);
-      document.getElementById('pontos-loadingMsg').style.display = 'none';
-      document.getElementById('pontos-tbl').style.display = '';
-      const withBalance = data.filter(c => c.point_balance > 0);
-      const totalBalance = data.reduce((s, c) => s + (c.point_balance || 0), 0);
-      const totalEarned  = data.reduce((s, c) => s + (c.point_earned  || 0), 0);
-      const avg = withBalance.length ? Math.round(totalBalance / withBalance.length) : 0;
-      const fmtN = n => Math.round(n).toLocaleString('pt-PT');
-      document.getElementById('pontos-s-total').textContent   = fmtN(data.length);
-      document.getElementById('pontos-s-balance').textContent = fmtN(totalBalance) + ' pts';
-      document.getElementById('pontos-s-avg').textContent     = fmtN(avg) + ' pts';
-      document.getElementById('pontos-s-earned').textContent  = fmtN(totalEarned) + ' pts';
-      document.getElementById('pontos-cnt').textContent = data.length + ' cliente' + (data.length !== 1 ? 's' : '');
-    })
-    .catch(() => {
-      document.getElementById('pontos-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados de pontos.</div>';
-    });
-}
-
-function pontosRenderTable(data) {
-  const tbody = document.getElementById('pontos-tbody');
-  const maxBalance = data.length ? Math.max(...data.map(c => c.point_balance || 0)) : 1;
-  let html = '';
-  data.forEach((c, i) => {
-    const rank = i + 1;
-    const rankCls = rank <= 3 ? ' rank-gold' : '';
-    const pts          = Math.round(c.point_balance || 0).toLocaleString('pt-PT');
-    const totalReceived= Math.round((c.point_balance || 0) + (c.point_spent || 0)).toLocaleString('pt-PT');
-    const earned       = Math.round(c.point_earned  || 0).toLocaleString('pt-PT');
-    const spent        = Math.round(c.point_spent   || 0).toLocaleString('pt-PT');
-    const money        = (c.total_spent || 0).toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    const pct          = maxBalance > 0 ? Math.round((c.point_balance || 0) / maxBalance * 100) : 0;
-    html += `<tr class="customer-row" data-rank="${rank}" data-name="${(c.name||'').toLowerCase()}" data-email="${(c.email||'').toLowerCase()}" data-balance="${c.point_balance||0}">
-      <td class="td-rank${rankCls}">${rank}</td>
-      <td>
-        <div class="c-name">${c.name || '\u2014'}</div>
-        <div class="c-email">${c.email || ''}</div>
-      </td>
-      <td>
-        <div class="num gold">${pts} pts</div>
-        <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
-      </td>
-      <td><div class="num">${totalReceived} pts</div></td>
-      <td><div class="num">${earned} pts</div></td>
-      <td><div class="num">${spent} pts</div></td>
-      <td><div class="num gold">${money}\u20AC</div></td>
-      <td><div class="num">${c.total_orders || 0}</div></td>
-      <td><div class="sub">${c.last_order || '\u2014'}</div></td>
-      <td><div class="c-loc">${c.city || '\u2014'}</div></td>
-    </tr>`;
-  });
-  tbody.innerHTML = html;
-}
-
-function pontosApplyFilter() {
-  const q = document.getElementById('pontosSearch').value.toLowerCase();
-  const rows = document.querySelectorAll('#pontos-tbody .customer-row');
-  let visible = 0;
-  rows.forEach(row => {
-    const email = row.dataset.email || '';
-    const name  = row.dataset.name  || '';
-    const show  = !q || email.includes(q) || name.includes(q);
-    row.classList.toggle('hidden', !show);
-    if (show) visible++;
-  });
-  document.getElementById('pontos-cnt').textContent = visible + ' cliente' + (visible !== 1 ? 's' : '');
-}
-
-let _pontosSortCol = 2;
-let _pontosSortDir = 'desc';
-
-function pontosSortTbl(col) {
-  const tbody = document.getElementById('pontos-tbody');
-  const rows  = [...tbody.querySelectorAll('.customer-row')];
-  const dir   = (_pontosSortCol === col && _pontosSortDir === 'desc') ? 'asc' : 'desc';
-  _pontosSortCol = col; _pontosSortDir = dir;
-  const arrow = dir === 'desc' ? ' \u2193' : ' \u2191';
-  const headers = ['#','Cliente','Pontos Dispon\u00EDveis','Total Recebido','Pts de Compras','Pontos Usados','Gasto Online','Encomendas','\u00DAltima Compra','Cidade'];
-  document.querySelectorAll('#pontos-tbl thead th').forEach((th, i) => {
-    th.classList.toggle('sorted', i === col);
-    th.textContent = headers[i] + (i === col ? arrow : '');
-  });
-  rows.sort((a, b) => {
-    let va, vb;
-    if (col === 0) { va = parseInt(a.dataset.rank); vb = parseInt(b.dataset.rank); }
-    else if (col === 1) { va = a.dataset.name; vb = b.dataset.name; return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
-    else if (col === 2) { va = parseFloat(a.dataset.balance); vb = parseFloat(b.dataset.balance); }
-    else {
-      const tds = [null, null, null, null, null, null, null, null, null];
-      const aT = a.querySelectorAll('td'); const bT = b.querySelectorAll('td');
-      const parseNum = s => parseFloat((s||'').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.')) || 0;
-      va = parseNum(aT[col] ? aT[col].textContent : '');
-      vb = parseNum(bT[col] ? bT[col].textContent : '');
-      if (col === 7 || col === 8) { va = (aT[col]||{}).textContent||''; vb = (bT[col]||{}).textContent||''; return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
-    }
-    return dir === 'asc' ? va - vb : vb - va;
-  });
-  rows.forEach(r => tbody.appendChild(r));
 }
 </script>
 </body>
