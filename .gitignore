@@ -25,3 +25,7 @@ cache/
 
 # Claude workspace
 .claude/
+meta_conversions.log
+meta_launchd.log
+meta_launchd_error.log
+meta_sent_events.json

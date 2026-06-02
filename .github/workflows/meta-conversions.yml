@@ -1,0 +1,33 @@
+name: Meta Offline Conversions
+
+# Corre todos os dias às 23:00 Lisboa (22:00 UTC) — e permite correr à mão
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+jobs:
+  send-conversions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run Meta conversions
+        env:
+          MOLONI_CLIENT_ID:     ${{ secrets.MOLONI_CLIENT_ID }}
+          MOLONI_CLIENT_SECRET: ${{ secrets.MOLONI_CLIENT_SECRET }}
+          MOLONI_USERNAME:      ${{ secrets.MOLONI_USERNAME }}
+          MOLONI_PASSWORD:      ${{ secrets.MOLONI_PASSWORD }}
+          MOLONI_COMPANY_ID:    ${{ secrets.MOLONI_COMPANY_ID }}
+          META_DATASET_ID:      ${{ secrets.META_DATASET_ID }}
+          META_ACCESS_TOKEN:    ${{ secrets.META_ACCESS_TOKEN }}
+        run: python meta_offline_conversions.py
