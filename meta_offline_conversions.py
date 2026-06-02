@@ -67,8 +67,10 @@ def build_user_data(customer: dict) -> dict:
     if email and "@" in email:
         user_data["em"] = sha256(normalize_email(email))
 
+    FAKE_PHONES = {"999999990", "000000000", "111111111"}
     phone = customer.get("phone", "").strip() or customer.get("mobile_phone", "").strip()
-    if phone:
+    phone_digits = re.sub(r"\D", "", phone)
+    if phone and phone_digits not in FAKE_PHONES and len(phone_digits) >= 9:
         user_data["ph"] = sha256(normalize_phone(phone))
 
     name = customer.get("name", "").strip()
