@@ -30,8 +30,9 @@ PHYSICAL_TERMINALS = {
 }
 
 # ─── CONFIG META ────────────────────────────────────────────────────────────────
-META_DATASET_ID   = os.environ.get("META_DATASET_ID", "314882189045033")
-META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "")
+META_DATASET_ID        = os.environ.get("META_DATASET_ID", "314882189045033")         # Pixel
+META_OFFLINE_DATASET_ID = os.environ.get("META_OFFLINE_DATASET_ID", "764310786615956") # Offline Event Set dedicado
+META_ACCESS_TOKEN      = os.environ.get("META_ACCESS_TOKEN", "")
 META_API_VERSION  = "v19.0"
 META_BASE_URL     = f"https://graph.facebook.com/{META_API_VERSION}"
 
@@ -218,25 +219,24 @@ def doc_to_meta_event(doc: dict, customer: dict, store_name: str) -> Optional[di
     }
 
 # ─── ENVIO PARA META ────────────────────────────────────────────────────────────
-def send_to_meta(events: list[dict]) -> dict:
-    """Envia até 1000 eventos por chamada."""
-    url = f"{META_BASE_URL}/{META_DATASET_ID}/events"
+def send_to_meta(events: list[dict], dataset_id: str) -> dict:
+    """Envia até 1000 eventos para um dataset."""
+    url = f"{META_BASE_URL}/{dataset_id}/events"
     payload = {
         "access_token": META_ACCESS_TOKEN,
         "data": json.dumps(events),
     }
-
     r = requests.post(url, data=payload, timeout=30)
     return r.json()
 
-def send_in_batches(events: list[dict], batch_size: int = 1000):
+def send_in_batches(events: list[dict], dataset_id: str, batch_size: int = 1000):
     total = len(events)
     sent = 0
     errors = 0
 
     for i in range(0, total, batch_size):
         batch = events[i:i + batch_size]
-        result = send_to_meta(batch)
+        result = send_to_meta(batch, dataset_id)
 
         events_received = result.get("events_received", 0)
         sent += events_received
@@ -314,15 +314,21 @@ def main():
     event_keys = [k for k, _ in all_events]
     events     = [e for _, e in all_events]
 
-    print("\nA enviar ao Meta...")
-    sent_count, error_count = send_in_batches(events)
+    # Enviar para o Pixel
+    print(f"\nA enviar ao Pixel ({META_DATASET_ID})...")
+    sent1, errors1 = send_in_batches(events, META_DATASET_ID)
+
+    # Enviar para o Offline Event Set dedicado
+    print(f"\nA enviar ao Offline Dataset ({META_OFFLINE_DATASET_ID})...")
+    sent2, errors2 = send_in_batches(events, META_OFFLINE_DATASET_ID)
 
     # Guardar IDs enviados com sucesso
     sent_ids.update(event_keys)
     save_sent_events(sent_ids)
 
     print("\n" + "=" * 60)
-    print(f"Concluído: {sent_count} eventos enviados, {error_count} erros")
+    print(f"Pixel:   {sent1} eventos enviados, {errors1} erros")
+    print(f"Offline: {sent2} eventos enviados, {errors2} erros")
     print("=" * 60)
 
 if __name__ == "__main__":
