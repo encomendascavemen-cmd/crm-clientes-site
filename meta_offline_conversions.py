@@ -87,6 +87,15 @@ def build_user_data(customer: dict) -> dict:
     # País: Portugal
     user_data["country"] = sha256("pt")
 
+    # Cidade e código postal
+    city = (customer.get("city") or "").strip()
+    if city and city.lower() not in ["desconhecido", "unknown", ""]:
+        user_data["ct"] = sha256(normalize_name_part(city))
+
+    zip_code = re.sub(r"\D", "", (customer.get("zip_code") or ""))
+    if zip_code and zip_code not in ["0000000", "0000-000", ""]:
+        user_data["zp"] = sha256(zip_code)
+
     return user_data
 
 # ─── AUTH MOLONI ────────────────────────────────────────────────────────────────
@@ -151,6 +160,15 @@ def fetch_documents_by_year(token, doc_type, year):
 
     return results
 
+def get_doc_products(token, doc_type, doc_id):
+    """Busca os produtos de um documento específico."""
+    data = api_post(f"{doc_type}/getOne", token, {"document_id": doc_id})
+    if isinstance(data, list) and data:
+        return data[0].get("products") or []
+    if isinstance(data, dict):
+        return data.get("products") or []
+    return []
+
 def get_customer(token, customer_id):
     if not customer_id:
         return {}
@@ -180,12 +198,11 @@ def doc_to_meta_event(doc: dict, customer: dict, store_name: str) -> Optional[di
     except Exception:
         return None
 
-    # Valor total
+    # Valor e produtos
+    products = doc.get("products") or []
     try:
-        value = float(doc.get("global_discount_value") or doc.get("net_value") or 0)
+        value = float(doc.get("net_value") or 0)
         if value <= 0:
-            # fallback: somar produtos
-            products = doc.get("products") or []
             value = sum(float(p.get("price", 0)) * float(p.get("qty", 1)) for p in products)
     except Exception:
         value = 0.0
@@ -193,19 +210,40 @@ def doc_to_meta_event(doc: dict, customer: dict, store_name: str) -> Optional[di
     if value <= 0:
         return None
 
+    # Produtos para o Meta (content_ids, contents, num_items)
+    contents = []
+    for p in products:
+        name = (p.get("name") or "").strip()
+        qty = int(float(p.get("qty") or 1))
+        price = round(float(p.get("price") or 0), 2)
+        ref = (p.get("reference") or p.get("ean") or name or "").strip()
+        if name:
+            contents.append({
+                "id": ref,
+                "quantity": qty,
+                "item_price": price,
+                "title": name,
+            })
+
     event_id = f"moloni_{doc.get('document_id') or doc.get('id')}"
+
+    custom_data = {
+        "value": round(value, 2),
+        "currency": "EUR",
+        "store": store_name,
+        "num_items": sum(int(float(p.get("qty") or 1)) for p in products),
+    }
+    if contents:
+        custom_data["contents"] = contents
+        custom_data["content_type"] = "product"
 
     return {
         "event_name": "Purchase",
         "event_time": event_time,
-        "event_id": event_id,  # para deduplicação no Meta
+        "event_id": event_id,
         "action_source": "physical_store",
         "user_data": user_data,
-        "custom_data": {
-            "value": round(value, 2),
-            "currency": "EUR",
-            "store": store_name,
-        },
+        "custom_data": custom_data,
     }
 
 # ─── ENVIO PARA META ────────────────────────────────────────────────────────────
@@ -274,6 +312,11 @@ def main():
                 if customer_id not in customer_cache:
                     customer_cache[customer_id] = get_customer(token, customer_id)
                 customer = customer_cache[customer_id]
+
+                # Garantir que temos produtos (vêm no getAll mas por precaução)
+                if not doc.get("products"):
+                    doc_id = doc.get("document_id") or doc.get("id")
+                    doc["products"] = get_doc_products(token, doc_type, doc_id)
 
                 event = doc_to_meta_event(doc, customer, store_name)
                 if event and event["event_time"] >= cutoff:
