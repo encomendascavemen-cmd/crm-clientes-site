@@ -161,17 +161,7 @@ def get_customer(token, customer_id):
         return data
     return {}
 
-# ─── DEDUP ──────────────────────────────────────────────────────────────────────
-def load_sent_events():
-    try:
-        with open(SENT_EVENTS_FILE) as f:
-            return set(json.load(f))
-    except (FileNotFoundError, json.JSONDecodeError):
-        return set()
-
-def save_sent_events(sent: set):
-    with open(SENT_EVENTS_FILE, "w") as f:
-        json.dump(list(sent), f)
+# Nota: deduplicação feita pelo Meta via event_id único por documento
 
 # ─── CONVERTER DOCUMENTO → EVENTO META ─────────────────────────────────────────
 def doc_to_meta_event(doc: dict, customer: dict, store_name: str) -> Optional[dict]:
@@ -263,13 +253,10 @@ def main():
     print(f"A processar ano {current_year} (Meta aceita só últimos 7 dias)")
 
     token = get_token()
-    sent_ids = load_sent_events()
     all_events = []
-
-    # Tipos de documento a processar
-    doc_types = ["simplifiedInvoices", "invoiceReceipts", "invoices"]
-
     customer_cache = {}
+    doc_types = ["simplifiedInvoices", "invoiceReceipts", "invoices"]
+    cutoff = int((datetime.now() - timedelta(days=7)).timestamp())
 
     for doc_type in doc_types:
         for year in years:
@@ -277,54 +264,33 @@ def main():
             docs = fetch_documents_by_year(token, doc_type, year)
             print(f"  {len(docs)} documentos encontrados")
 
-        for doc in docs:
-            # Filtrar apenas lojas físicas
-            terminal_id = doc.get("associated_documents", [{}])
-            terminal_id = doc.get("terminal_id") or 0
-            if terminal_id not in PHYSICAL_TERMINALS:
-                continue
+            for doc in docs:
+                terminal_id = doc.get("terminal_id") or 0
+                if terminal_id not in PHYSICAL_TERMINALS:
+                    continue
 
-            store_name = PHYSICAL_TERMINALS[terminal_id]
-            doc_id = str(doc.get("document_id") or doc.get("id", ""))
-            event_key = f"{doc_type}_{doc_id}"
+                store_name = PHYSICAL_TERMINALS[terminal_id]
+                customer_id = doc.get("customer_id")
+                if customer_id not in customer_cache:
+                    customer_cache[customer_id] = get_customer(token, customer_id)
+                customer = customer_cache[customer_id]
 
-            if event_key in sent_ids:
-                continue  # já enviado
-
-            # Buscar cliente (com cache)
-            customer_id = doc.get("customer_id")
-            if customer_id not in customer_cache:
-                customer_cache[customer_id] = get_customer(token, customer_id)
-            customer = customer_cache[customer_id]
-
-            event = doc_to_meta_event(doc, customer, store_name)
-            if event:
-                all_events.append((event_key, event))
-
-    # Filtrar apenas últimos 7 dias
-    cutoff = int((datetime.now() - timedelta(days=7)).timestamp())
-    all_events = [(k, e) for k, e in all_events if e["event_time"] >= cutoff]
+                event = doc_to_meta_event(doc, customer, store_name)
+                if event and event["event_time"] >= cutoff:
+                    all_events.append(event)
 
     print(f"\nTotal de eventos a enviar (últimos 7 dias): {len(all_events)}")
     if not all_events:
         print("Nada a enviar.")
         return
 
-    # Separar keys dos eventos
-    event_keys = [k for k, _ in all_events]
-    events     = [e for _, e in all_events]
-
     # Enviar para o Pixel
     print(f"\nA enviar ao Pixel ({META_DATASET_ID})...")
-    sent1, errors1 = send_in_batches(events, META_DATASET_ID)
+    sent1, errors1 = send_in_batches(all_events, META_DATASET_ID)
 
     # Enviar para o Offline Event Set dedicado
     print(f"\nA enviar ao Offline Dataset ({META_OFFLINE_DATASET_ID})...")
-    sent2, errors2 = send_in_batches(events, META_OFFLINE_DATASET_ID)
-
-    # Guardar IDs enviados com sucesso
-    sent_ids.update(event_keys)
-    save_sent_events(sent_ids)
+    sent2, errors2 = send_in_batches(all_events, META_OFFLINE_DATASET_ID)
 
     print("\n" + "=" * 60)
     print(f"Pixel:   {sent1} eventos enviados, {errors1} erros")
