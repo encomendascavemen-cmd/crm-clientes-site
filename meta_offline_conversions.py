@@ -84,6 +84,11 @@ def build_user_data(customer: dict) -> dict:
         if len(parts) > 1:
             user_data["ln"] = sha256(normalize_name_part(parts[-1]))
 
+    # Extern ID — ID do cliente no Moloni (identificador estável)
+    extern_id = str(customer.get("customer_id") or customer.get("id") or "").strip()
+    if extern_id and extern_id != "0":
+        user_data["external_id"] = sha256(extern_id)
+
     # País: Portugal
     user_data["country"] = sha256("pt")
 

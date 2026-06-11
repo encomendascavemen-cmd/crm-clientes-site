@@ -3,7 +3,7 @@ name: Meta Offline Conversions
 # Corre todos os dias às 23:00 Lisboa (22:00 UTC) — e permite correr à mão
 on:
   schedule:
-    - cron: "0 22 * * *"
+    - cron: "*/30 * * * *"  # A cada 30 minutos
   workflow_dispatch:
 
 jobs:
