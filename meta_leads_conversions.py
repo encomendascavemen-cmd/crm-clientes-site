@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Moloni → Meta Offline Conversions
-Envia vendas das lojas físicas Cavemen ao Meta via Conversions API.
+Moloni → Meta Offline Conversions (Conta Leads)
+Envia ao pixel dedicado da Conta Leads apenas as vendas que incluem
+o produto "Fato Noivo", via Conversions API.
 """
 
 import os
@@ -29,16 +30,17 @@ PHYSICAL_TERMINALS = {
     148908: "Porto",
 }
 
-# ─── CONFIG META ────────────────────────────────────────────────────────────────
-META_DATASET_ID        = os.environ.get("META_DATASET_ID", "314882189045033")         # Pixel
-# Nota: o dataset 764310786615956 é agora o pixel da Conta Leads e recebe apenas
-# vendas Fato Noivo via meta_leads_conversions.py — não enviar tudo para lá.
-META_ACCESS_TOKEN      = os.environ.get("META_ACCESS_TOKEN", "")
-META_API_VERSION  = "v19.0"
-META_BASE_URL     = f"https://graph.facebook.com/{META_API_VERSION}"
+# ─── CONFIG META (Conta Leads) ──────────────────────────────────────────────────
+META_LEADS_DATASET_ID = os.environ.get("META_LEADS_DATASET_ID", "764310786615956")  # Pixel Conta Leads
+META_LEADS_ACCESS_TOKEN = (
+    os.environ.get("META_LEADS_ACCESS_TOKEN")
+    or os.environ.get("META_ACCESS_TOKEN", "")
+)
+META_API_VERSION = "v19.0"
+META_BASE_URL    = f"https://graph.facebook.com/{META_API_VERSION}"
 
-# Ficheiro para tracking de eventos já enviados (evita duplicados)
-SENT_EVENTS_FILE  = "meta_sent_events.json"
+# Só enviar vendas que incluam este produto
+TARGET_PRODUCT = "fato noivo"
 
 # ─── HASHING (obrigatório pelo Meta) ───────────────────────────────────────────
 def sha256(value: str) -> str:
@@ -185,6 +187,15 @@ def get_customer(token, customer_id):
         return data
     return {}
 
+# ─── FILTRO FATO NOIVO ──────────────────────────────────────────────────────────
+def has_target_product(products: list) -> bool:
+    """True se algum produto do documento for o Fato Noivo."""
+    for p in products or []:
+        name = normalize_name_part(p.get("name") or "")
+        if TARGET_PRODUCT in name:
+            return True
+    return False
+
 # Nota: deduplicação feita pelo Meta via event_id único por documento
 
 # ─── CONVERTER DOCUMENTO → EVENTO META ─────────────────────────────────────────
@@ -257,7 +268,7 @@ def send_to_meta(events: list[dict], dataset_id: str) -> dict:
     """Envia até 1000 eventos para um dataset."""
     url = f"{META_BASE_URL}/{dataset_id}/events"
     payload = {
-        "access_token": META_ACCESS_TOKEN,
+        "access_token": META_LEADS_ACCESS_TOKEN,
         "data": json.dumps(events),
     }
     r = requests.post(url, data=payload, timeout=30)
@@ -288,8 +299,13 @@ def send_in_batches(events: list[dict], dataset_id: str, batch_size: int = 1000)
 # ─── MAIN ────────────────────────────────────────────────────────────────────────
 def main():
     print("=" * 60)
-    print("Cavemen Store — Meta Offline Conversions")
+    print("Cavemen Store — Meta Offline Conversions (Conta Leads / Fato Noivo)")
     print("=" * 60)
+
+    if not META_LEADS_DATASET_ID:
+        raise RuntimeError("META_LEADS_DATASET_ID não definido — configurar o ID do pixel da Conta Leads")
+    if not META_LEADS_ACCESS_TOKEN:
+        raise RuntimeError("META_LEADS_ACCESS_TOKEN/META_ACCESS_TOKEN não definido")
 
     # Apenas últimos 7 dias (limite do Meta CAPI)
     current_year = datetime.now().year
@@ -314,31 +330,35 @@ def main():
                     continue
 
                 store_name = PHYSICAL_TERMINALS[terminal_id]
-                customer_id = doc.get("customer_id")
-                if customer_id not in customer_cache:
-                    customer_cache[customer_id] = get_customer(token, customer_id)
-                customer = customer_cache[customer_id]
 
                 # Garantir que temos produtos (vêm no getAll mas por precaução)
                 if not doc.get("products"):
                     doc_id = doc.get("document_id") or doc.get("id")
                     doc["products"] = get_doc_products(token, doc_type, doc_id)
 
+                # Só vendas que incluam o Fato Noivo
+                if not has_target_product(doc.get("products")):
+                    continue
+
+                customer_id = doc.get("customer_id")
+                if customer_id not in customer_cache:
+                    customer_cache[customer_id] = get_customer(token, customer_id)
+                customer = customer_cache[customer_id]
+
                 event = doc_to_meta_event(doc, customer, store_name)
                 if event and event["event_time"] >= cutoff:
                     all_events.append(event)
 
-    print(f"\nTotal de eventos a enviar (últimos 7 dias): {len(all_events)}")
+    print(f"\nTotal de vendas Fato Noivo a enviar (últimos 7 dias): {len(all_events)}")
     if not all_events:
         print("Nada a enviar.")
         return
 
-    # Enviar para o Pixel
-    print(f"\nA enviar ao Pixel ({META_DATASET_ID})...")
-    sent1, errors1 = send_in_batches(all_events, META_DATASET_ID)
+    print(f"\nA enviar ao Pixel Conta Leads ({META_LEADS_DATASET_ID})...")
+    sent, errors = send_in_batches(all_events, META_LEADS_DATASET_ID)
 
     print("\n" + "=" * 60)
-    print(f"Pixel:   {sent1} eventos enviados, {errors1} erros")
+    print(f"Pixel Conta Leads: {sent} eventos enviados, {errors} erros")
     print("=" * 60)
 
 if __name__ == "__main__":
