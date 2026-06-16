@@ -36,8 +36,8 @@ GOOGLE_CLIENT_SECRET   = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REFRESH_TOKEN   = os.environ.get("GOOGLE_REFRESH_TOKEN", "")
 GOOGLE_CUSTOMER_ID     = os.environ.get("GOOGLE_CUSTOMER_ID", "9586857901")
 
-# ID da conversion action "Vendas Loja Fisica" criada manualmente no Google Ads
-CONVERSION_ACTION_ID   = os.environ.get("GOOGLE_CONVERSION_ACTION_ID", "851129172")
+# ID da conversion action "Vendas Loja Fisica (Offline)" criada via API
+CONVERSION_ACTION_ID   = os.environ.get("GOOGLE_CONVERSION_ACTION_ID", "7650202502")
 
 # ─── HASHING ────────────────────────────────────────────────────────────────────
 def sha256(value: str) -> str:
