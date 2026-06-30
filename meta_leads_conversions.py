@@ -31,7 +31,7 @@ PHYSICAL_TERMINALS = {
 }
 
 # ─── CONFIG META (Conta Leads) ──────────────────────────────────────────────────
-META_LEADS_DATASET_ID = os.environ.get("META_LEADS_DATASET_ID", "764310786615956")  # Pixel Conta Leads
+META_LEADS_DATASET_ID = os.environ.get("META_LEADS_DATASET_ID", "1923843178285898")  # Pixel Leads (Conta Leads)
 META_LEADS_ACCESS_TOKEN = (
     os.environ.get("META_LEADS_ACCESS_TOKEN")
     or os.environ.get("META_ACCESS_TOKEN", "")

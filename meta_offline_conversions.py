@@ -31,8 +31,7 @@ PHYSICAL_TERMINALS = {
 
 # ─── CONFIG META ────────────────────────────────────────────────────────────────
 META_DATASET_ID        = os.environ.get("META_DATASET_ID", "314882189045033")         # Pixel
-# Nota: o dataset 764310786615956 é agora o pixel da Conta Leads e recebe apenas
-# vendas Fato Noivo via meta_leads_conversions.py — não enviar tudo para lá.
+META_OFFLINE_DATASET_ID = os.environ.get("META_OFFLINE_DATASET_ID", "764310786615956") # Offline Event Set dedicado
 META_ACCESS_TOKEN      = os.environ.get("META_ACCESS_TOKEN", "")
 META_API_VERSION  = "v19.0"
 META_BASE_URL     = f"https://graph.facebook.com/{META_API_VERSION}"
@@ -337,8 +336,13 @@ def main():
     print(f"\nA enviar ao Pixel ({META_DATASET_ID})...")
     sent1, errors1 = send_in_batches(all_events, META_DATASET_ID)
 
+    # Enviar para o Offline Event Set dedicado
+    print(f"\nA enviar ao Offline Dataset ({META_OFFLINE_DATASET_ID})...")
+    sent2, errors2 = send_in_batches(all_events, META_OFFLINE_DATASET_ID)
+
     print("\n" + "=" * 60)
     print(f"Pixel:   {sent1} eventos enviados, {errors1} erros")
+    print(f"Offline: {sent2} eventos enviados, {errors2} erros")
     print("=" * 60)
 
 if __name__ == "__main__":

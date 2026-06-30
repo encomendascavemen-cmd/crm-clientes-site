@@ -28,7 +28,7 @@ jobs:
           MOLONI_USERNAME:         ${{ secrets.MOLONI_USERNAME }}
           MOLONI_PASSWORD:         ${{ secrets.MOLONI_PASSWORD }}
           MOLONI_COMPANY_ID:       ${{ secrets.MOLONI_COMPANY_ID }}
-          META_LEADS_DATASET_ID:   ${{ secrets.META_LEADS_DATASET_ID }}
-          META_LEADS_ACCESS_TOKEN: ${{ secrets.META_LEADS_ACCESS_TOKEN }}
+          # META_LEADS_DATASET_ID usa o default do script (764310786615956 = pixel Conta Leads)
+          # e o token cai no fallback META_ACCESS_TOKEN abaixo
           META_ACCESS_TOKEN:       ${{ secrets.META_ACCESS_TOKEN }}
         run: python meta_leads_conversions.py
