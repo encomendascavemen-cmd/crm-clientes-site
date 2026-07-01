@@ -263,26 +263,6 @@ def doc_to_meta_event(doc: dict, customer: dict, store_name: str) -> Optional[di
         "custom_data": custom_data,
     }
 
-# ─── PREFLIGHT: o token consegue escrever neste dataset? ────────────────────────
-def preflight_dataset_access(dataset_id: str) -> None:
-    """Testa acesso ao dataset sem enviar eventos reais.
-    POST com data=[] devolve 'param data must be non-empty' se o token tem acesso,
-    ou erro de permissão se não tem. Serve para despistar problemas de token."""
-    url = f"{META_BASE_URL}/{dataset_id}/events"
-    try:
-        r = requests.post(url, data={"access_token": META_LEADS_ACCESS_TOKEN, "data": "[]"}, timeout=30)
-        err = r.json().get("error", {})
-        msg = err.get("message", "")
-        subcode = err.get("error_subcode")
-        if "non-empty" in msg:
-            print(f"  PREFLIGHT OK: token tem acesso de escrita ao dataset {dataset_id}")
-        elif subcode == 33 or "missing permissions" in msg or "does not exist" in msg:
-            print(f"  PREFLIGHT FALHOU: token SEM acesso ao dataset {dataset_id} → {msg}")
-        else:
-            print(f"  PREFLIGHT inconclusivo ({dataset_id}): {msg or 'sem erro'}")
-    except Exception as e:
-        print(f"  PREFLIGHT erro de rede ({dataset_id}): {e}")
-
 # ─── ENVIO PARA META ────────────────────────────────────────────────────────────
 def send_to_meta(events: list[dict], dataset_id: str) -> dict:
     """Envia até 1000 eventos para um dataset."""
@@ -331,10 +311,6 @@ def main():
     current_year = datetime.now().year
     years = [current_year]
     print(f"A processar ano {current_year} (Meta aceita só últimos 7 dias)")
-
-    # Preflight: confirmar que o token consegue escrever no pixel (antes de processar)
-    print(f"\nPreflight de acesso ao pixel {META_LEADS_DATASET_ID}...")
-    preflight_dataset_access(META_LEADS_DATASET_ID)
 
     token = get_token()
     all_events = []

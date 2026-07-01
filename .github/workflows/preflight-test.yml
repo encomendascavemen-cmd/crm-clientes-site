@@ -1,0 +1,36 @@
+name: Preflight Token Test (temporário)
+
+# Teste pontual: confirma se o token do workflow consegue ESCREVER em cada dataset.
+# Envia 1 evento de teste (custom "PreflightTest") e mostra events_received vs erro.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preflight write test
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os, json, time, hashlib, urllib.request, urllib.parse, urllib.error
+          token = os.environ["META_ACCESS_TOKEN"]
+          def test(ds):
+              ev = [{
+                  "event_name": "PreflightTest",
+                  "event_time": int(time.time()) - 120,
+                  "event_id": f"preflight_{int(time.time())}",
+                  "action_source": "physical_store",
+                  "user_data": {"em": hashlib.sha256(b"preflight-test@cavemen.invalid").hexdigest()},
+              }]
+              data = urllib.parse.urlencode({"access_token": token, "data": json.dumps(ev)}).encode()
+              url = f"https://graph.facebook.com/v19.0/{ds}/events"
+              try:
+                  r = urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=30)
+                  print(f"[{ds}] ACEITE ->", r.read().decode())
+              except urllib.error.HTTPError as e:
+                  print(f"[{ds}] ERRO ->", e.read().decode())
+          for ds in ["1923843178285898", "764310786615956", "314882189045033"]:
+              test(ds)
+          PY
