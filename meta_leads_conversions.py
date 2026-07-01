@@ -263,6 +263,26 @@ def doc_to_meta_event(doc: dict, customer: dict, store_name: str) -> Optional[di
         "custom_data": custom_data,
     }
 
+# ─── PREFLIGHT: o token consegue escrever neste dataset? ────────────────────────
+def preflight_dataset_access(dataset_id: str) -> None:
+    """Testa acesso ao dataset sem enviar eventos reais.
+    POST com data=[] devolve 'param data must be non-empty' se o token tem acesso,
+    ou erro de permissão se não tem. Serve para despistar problemas de token."""
+    url = f"{META_BASE_URL}/{dataset_id}/events"
+    try:
+        r = requests.post(url, data={"access_token": META_LEADS_ACCESS_TOKEN, "data": "[]"}, timeout=30)
+        err = r.json().get("error", {})
+        msg = err.get("message", "")
+        subcode = err.get("error_subcode")
+        if "non-empty" in msg:
+            print(f"  PREFLIGHT OK: token tem acesso de escrita ao dataset {dataset_id}")
+        elif subcode == 33 or "missing permissions" in msg or "does not exist" in msg:
+            print(f"  PREFLIGHT FALHOU: token SEM acesso ao dataset {dataset_id} → {msg}")
+        else:
+            print(f"  PREFLIGHT inconclusivo ({dataset_id}): {msg or 'sem erro'}")
+    except Exception as e:
+        print(f"  PREFLIGHT erro de rede ({dataset_id}): {e}")
+
 # ─── ENVIO PARA META ────────────────────────────────────────────────────────────
 def send_to_meta(events: list[dict], dataset_id: str) -> dict:
     """Envia até 1000 eventos para um dataset."""
@@ -312,11 +332,20 @@ def main():
     years = [current_year]
     print(f"A processar ano {current_year} (Meta aceita só últimos 7 dias)")
 
+    # Preflight: confirmar que o token consegue escrever no pixel (antes de processar)
+    print(f"\nPreflight de acesso ao pixel {META_LEADS_DATASET_ID}...")
+    preflight_dataset_access(META_LEADS_DATASET_ID)
+
     token = get_token()
     all_events = []
     customer_cache = {}
     doc_types = ["simplifiedInvoices", "invoiceReceipts", "invoices"]
     cutoff = int((datetime.now() - timedelta(days=7)).timestamp())
+
+    # Diagnóstico: distinguir "sem vendas" de "vendas sem contacto/fora de janela"
+    diag_fato_total = 0        # docs com Fato Noivo (qualquer data)
+    diag_fato_recent = 0       # + dentro dos últimos 7 dias
+    diag_dropped_no_match = 0  # + Fato Noivo recente mas sem email/telefone
 
     for doc_type in doc_types:
         for year in years:
@@ -340,6 +369,8 @@ def main():
                 if not has_target_product(doc.get("products")):
                     continue
 
+                diag_fato_total += 1
+
                 customer_id = doc.get("customer_id")
                 if customer_id not in customer_cache:
                     customer_cache[customer_id] = get_customer(token, customer_id)
@@ -348,6 +379,27 @@ def main():
                 event = doc_to_meta_event(doc, customer, store_name)
                 if event and event["event_time"] >= cutoff:
                     all_events.append(event)
+                else:
+                    # Diagnóstico: perceber porque não foi enviado
+                    ud = build_user_data(customer)
+                    is_recent = False
+                    try:
+                        clean = doc.get("date", "").replace("+0000", "+00:00").replace("+0100", "+01:00")
+                        is_recent = int(datetime.fromisoformat(clean).timestamp()) >= cutoff
+                    except Exception:
+                        pass
+                    if is_recent:
+                        diag_fato_recent += 1
+                        if not ud.get("em") and not ud.get("ph"):
+                            diag_dropped_no_match += 1
+
+    diag_fato_recent += len(all_events)
+    print("\n" + "-" * 60)
+    print("DIAGNÓSTICO Fato Noivo:")
+    print(f"  Documentos com Fato Noivo (todo o ano):        {diag_fato_total}")
+    print(f"  Desses, dentro dos últimos 7 dias:             {diag_fato_recent}")
+    print(f"  Recentes descartados por falta de email/tel:   {diag_dropped_no_match}")
+    print("-" * 60)
 
     print(f"\nTotal de vendas Fato Noivo a enviar (últimos 7 dias): {len(all_events)}")
     if not all_events:
