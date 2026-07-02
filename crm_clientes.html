@@ -212,7 +212,7 @@ thead th.sorted{color:var(--gold);}
 
 <header>
   <div class="logo">CAVEMEN <span>· CRM</span></div>
-  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 26/05/2026 13:03 · 5,324 clientes</div>
+  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 29/06/2026 16:56 · 5,389 clientes</div>
   <div style="display:flex;gap:8px;margin-left:auto;">
     <button class="refresh-btn" id="btnRefresh" onclick="refreshCRM(false)" title="Atualiza usando cache (rápido)">↻ Atualizar</button>
     <button class="refresh-btn refresh-full" id="btnFull" onclick="refreshCRM(true)" title="Vai buscar dados novos ao Magento (~2 min)">⬇ Dados Novos</button>
@@ -291,7 +291,7 @@ thead th.sorted{color:var(--gold);}
 <div id="tab-rfv" style="display:none">
 
 <div class="stats-4">
-  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">5,324</div><div class="stat-s">com encomendas válidas</div></div>
+  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">5,389</div><div class="stat-s">com encomendas válidas</div></div>
   <div class="stat"><div class="stat-l">Champions + Fiéis</div><div class="stat-v" id="rfv-s-champ">—</div><div class="stat-s" id="rfv-s-champ-s">calculando…</div></div>
   <div class="stat"><div class="stat-l">Em Risco + Não Perder</div><div class="stat-v" id="rfv-s-risk">—</div><div class="stat-s">reactivar urgente</div></div>
   <div class="stat"><div class="stat-l">Receita Champions</div><div class="stat-v" id="rfv-s-rev">—</div><div class="stat-s">segmento topo</div></div>
@@ -502,10 +502,10 @@ thead th.sorted{color:var(--gold);}
 </div>
 
 <script>
-const STATS = {"total_customers": 5324, "total_revenue": 825041.0, "total_orders": 9967, "avg_order": 82.78, "recurring": 1897, "top10_revenue": 24159.0, "top10_pct": 2.9, "recurring_pct": 36.0, "generated_at": "26/05/2026 13:03"};
+const STATS = {"total_customers": 5389, "total_revenue": 842533.0, "total_orders": 10140, "avg_order": 83.09, "recurring": 1926, "top10_revenue": 25029.0, "top10_pct": 3.0, "recurring_pct": 36.0, "generated_at": "29/06/2026 16:56"};
 const STATUS_COLORS = {"complete": "#4caf89", "processing": "#5b9bd5", "closed": "#888", "canceled": "#e05454", "pending": "#f0a732", "holded": "#888", "pending_payment": "#f0a732"};
 const STATUS_LABELS = {"complete": "Completa", "processing": "Em processo", "closed": "Fechada", "canceled": "Cancelada", "pending": "Pendente", "holded": "Em espera", "pending_payment": "Pag. pendente"};
-const MATRIX_DATA = {"5_4": 18, "5_3": 20, "5_5": 15, "4_3": 72, "4_5": 30, "4_2": 78, "5_1": 6, "3_1": 237, "3_3": 122, "4_4": 40, "4_1": 44, "2_2": 188, "5_2": 7, "3_2": 144, "3_4": 74, "1_1": 2417, "1_2": 542, "2_1": 582, "3_5": 32, "2_5": 22, "1_4": 117, "2_4": 41, "2_3": 125, "1_3": 309, "1_5": 42};
+const MATRIX_DATA = {"5_4": 22, "4_5": 15, "5_5": 16, "4_4": 51, "5_3": 16, "4_2": 95, "5_1": 5, "3_1": 259, "3_2": 180, "3_5": 27, "5_2": 12, "4_3": 50, "4_1": 58, "2_2": 202, "3_3": 92, "1_1": 2534, "1_2": 575, "2_1": 624, "3_4": 57, "2_4": 44, "1_4": 96, "1_3": 205, "1_5": 53, "2_3": 80, "2_5": 21};
 const SEGMENTS_META = {"champions": {"name": "Champions", "color": "#e8c98a", "icon": "\ud83c\udfc6", "desc": "Compraram recentemente, frequentemente e gastaram muito"}, "loyal": {"name": "Clientes Fi\u00e9is", "color": "#4caf89", "icon": "\ud83d\udc9a", "desc": "Compram com frequ\u00eancia e gastam bem"}, "potential": {"name": "Potenciais Fi\u00e9is", "color": "#5b9bd5", "icon": "\u2b50", "desc": "Clientes recentes com potencial para fidelizar"}, "new": {"name": "Novos Clientes", "color": "#7ec8a4", "icon": "\ud83c\udd95", "desc": "Compraram pela primeira vez recentemente"}, "promising": {"name": "Promissores", "color": "#a8c8ff", "icon": "\ud83c\udf31", "desc": "Mostram interesse, ainda a crescer"}, "attention": {"name": "Precisam Aten\u00e7\u00e3o", "color": "#f0a732", "icon": "\u26a0\ufe0f", "desc": "Acima da m\u00e9dia mas a distanciar-se"}, "at_risk": {"name": "Em Risco", "color": "#e07054", "icon": "\ud83d\udd34", "desc": "Compravam muito mas n\u00e3o compram h\u00e1 algum tempo"}, "cant_lose": {"name": "N\u00e3o Perder", "color": "#c94b4b", "icon": "\ud83d\udea8", "desc": "Grandes compradores inativos \u2014 reactivar urgente"}, "hibernating": {"name": "A Hibernar", "color": "#666666", "icon": "\ud83d\ude34", "desc": "\u00daltima compra h\u00e1 muito tempo, pouca frequ\u00eancia"}, "lost": {"name": "Perdidos", "color": "#333333", "icon": "\ud83d\udc80", "desc": "Inactivos h\u00e1 muito tempo e pouco frequentes"}};
 const SEG_TABLE = {'5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose','4_5':'champions','4_4':'loyal','4_3':'loyal','4_2':'at_risk','4_1':'cant_lose','3_5':'potential','3_4':'potential','3_3':'attention','3_2':'attention','3_1':'hibernating','2_5':'new','2_4':'promising','2_3':'promising','2_2':'hibernating','2_1':'lost','1_5':'new','1_4':'new','1_3':'promising','1_2':'lost','1_1':'lost'};
 let CUSTOMERS = [];
@@ -568,7 +568,6 @@ let pontosLoaded = false;
 let pontosSortCol = 2;
 let pontosSortAsc = false;
 
-// ── Pontos: carregamento ──────────────────────────────────────────────────────
 function loadPontos() {
   fetch('/api/crm/pontos')
     .then(r => r.json())
@@ -576,7 +575,6 @@ function loadPontos() {
       if (data.error) throw new Error(data.error);
       PONTOS_ALL = data;
       pontosLoaded = true;
-      // stats
       const fmtN = n => n.toLocaleString('pt-PT');
       const totalBalance = data.reduce((s,c) => s + (c.point_balance||0), 0);
       const totalEarned  = data.reduce((s,c) => s + (c.point_earned||0), 0);

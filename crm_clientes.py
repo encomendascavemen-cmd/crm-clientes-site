@@ -615,6 +615,8 @@ thead th.sorted{{color:var(--gold);}}
   <div class="tab-nav">
     <button class="tab-btn active" id="tab-btn-clientes" onclick="switchTab('clientes',this)">👥 Clientes</button>
     <button class="tab-btn" id="tab-btn-rfv" onclick="switchTab('rfv',this)">📊 Matriz RFV</button>
+    <button class="tab-btn" id="tab-btn-pontos" onclick="switchTab('pontos',this)">🏆 Pontos</button>
+    <a class="tab-btn" id="tab-link-lojas" href="/crm-lojas" style="text-decoration:none;display:inline-flex;align-items:center">🏪 CRM Lojas</a>
   </div>
 </header>
 
@@ -845,6 +847,40 @@ thead th.sorted{{color:var(--gold);}}
 
 </div><!-- /tab-rfv -->
 
+<!-- ═══════════════════════════════════════════════ TAB: PONTOS ════ -->
+<div id="tab-pontos" style="display:none">
+  <div class="stats-4" id="pontos-stats" style="padding:24px 28px 0">
+    <div class="stat"><div class="stat-l">Clientes com pontos</div><div class="stat-v" id="pontos-s-total">…</div></div>
+    <div class="stat"><div class="stat-l">Pontos em circulação</div><div class="stat-v" id="pontos-s-balance">…</div></div>
+    <div class="stat"><div class="stat-l">Média por cliente</div><div class="stat-v" id="pontos-s-avg">…</div></div>
+    <div class="stat"><div class="stat-l">Pts de compras</div><div class="stat-v" id="pontos-s-earned">…</div></div>
+  </div>
+  <div style="padding:16px 28px 8px;display:flex;gap:10px;align-items:center">
+    <input id="pontos-search" type="search" placeholder="Pesquisar cliente…" oninput="pontosApplyFilter()" style="padding:8px 14px;background:#1a1a1a;border:1px solid #2e2e2e;border-radius:6px;color:#e0e0e0;font-size:.82rem;width:240px;">
+    <span id="pontos-cnt" style="color:#666;font-size:.8rem;margin-left:4px"></span>
+  </div>
+  <div style="padding:0 28px 32px;overflow-x:auto">
+    <div id="pontos-loadingMsg" style="color:#666;padding:40px 0;text-align:center">A carregar pontos…</div>
+    <table id="pontos-tbl" style="display:none;width:100%;border-collapse:collapse;font-size:.82rem">
+      <thead>
+        <tr style="border-bottom:1px solid #2e2e2e;color:#888">
+          <th style="padding:10px 8px;text-align:left;width:36px">#</th>
+          <th onclick="pontosSortTbl(1)" style="padding:10px 8px;text-align:left;cursor:pointer">Cliente</th>
+          <th onclick="pontosSortTbl(2)" id="pontos-sort-2" style="padding:10px 8px;text-align:right;cursor:pointer;color:var(--gold)">Pontos Disponíveis ↓</th>
+          <th onclick="pontosSortTbl(3)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Pontos disponíveis + pontos já usados = total alguma vez recebido">Total Recebido</th>
+          <th onclick="pontosSortTbl(4)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Pontos ganhos apenas através de compras online">Pts de Compras</th>
+          <th onclick="pontosSortTbl(5)" style="padding:10px 8px;text-align:right;cursor:pointer">Pontos Usados</th>
+          <th onclick="pontosSortTbl(6)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Apenas vendas online (Magento). Compras em loja física não incluídas.">Gasto Online</th>
+          <th onclick="pontosSortTbl(7)" style="padding:10px 8px;text-align:right;cursor:pointer">Encomendas</th>
+          <th onclick="pontosSortTbl(8)" style="padding:10px 8px;text-align:right;cursor:pointer">Última Compra</th>
+          <th onclick="pontosSortTbl(9)" style="padding:10px 8px;text-align:left;cursor:pointer">Cidade</th>
+        </tr>
+      </thead>
+      <tbody id="pontos-tbody"></tbody>
+    </table>
+  </div>
+</div><!-- /tab-pontos -->
+
 <!-- Profile Modal -->
 <div class="overlay" id="overlay" onclick="closeProfile(event)">
   <div class="drawer" id="drawer">
@@ -914,9 +950,101 @@ let activeSegment = null;
 function switchTab(tab, btn) {{
   document.getElementById('tab-clientes').style.display = tab === 'clientes' ? '' : 'none';
   document.getElementById('tab-rfv').style.display       = tab === 'rfv'      ? '' : 'none';
+  document.getElementById('tab-pontos').style.display    = tab === 'pontos'   ? '' : 'none';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (tab === 'rfv' && !rfvLoaded) loadRFV();
+  if (tab === 'pontos' && !pontosLoaded) loadPontos();
+}}
+
+// ── Pontos: globals ───────────────────────────────────────────────────────────
+let PONTOS_ALL = [];
+let pontos_filtered = [];
+let pontosLoaded = false;
+let pontosSortCol = 2;
+let pontosSortAsc = false;
+
+// ── Pontos: carregamento ──────────────────────────────────────────────────────
+function loadPontos() {{
+  fetch('/api/crm/pontos')
+    .then(r => r.json())
+    .then(data => {{
+      if (data.error) throw new Error(data.error);
+      PONTOS_ALL = data;
+      pontosLoaded = true;
+      const fmtN = n => n.toLocaleString('pt-PT');
+      const totalBalance = data.reduce((s,c) => s + (c.point_balance||0), 0);
+      const totalEarned  = data.reduce((s,c) => s + (c.point_earned||0), 0);
+      document.getElementById('pontos-s-total').textContent   = fmtN(data.length);
+      document.getElementById('pontos-s-balance').textContent = fmtN(totalBalance);
+      document.getElementById('pontos-s-avg').textContent     = data.length ? fmtN(Math.round(totalBalance/data.length)) : '0';
+      document.getElementById('pontos-s-earned').textContent  = fmtN(totalEarned);
+      pontosApplyFilter();
+      document.getElementById('pontos-loadingMsg').style.display = 'none';
+      document.getElementById('pontos-tbl').style.display = '';
+    }})
+    .catch(e => {{
+      document.getElementById('pontos-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar pontos: '+e.message+'</div>';
+    }});
+}}
+
+function pontosSortTbl(col) {{
+  if (pontosSortCol === col) {{ pontosSortAsc = !pontosSortAsc; }}
+  else {{ pontosSortCol = col; pontosSortAsc = col === 1 || col === 9 || col === 8; }}
+  pontosRenderTable(pontos_filtered);
+}}
+
+function pontosApplyFilter() {{
+  const q = (document.getElementById('pontos-search').value || '').toLowerCase();
+  pontos_filtered = q ? PONTOS_ALL.filter(c =>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.email||'').toLowerCase().includes(q) ||
+    (c.city||'').toLowerCase().includes(q)
+  ) : PONTOS_ALL.slice();
+  document.getElementById('pontos-cnt').textContent = pontos_filtered.length + ' clientes';
+  pontosRenderTable(pontos_filtered);
+}}
+
+function pontosRenderTable(data) {{
+  const sorted = data.slice().sort((a, b) => {{
+    let va, vb;
+    switch(pontosSortCol) {{
+      case 1: va = (a.name||'').toLowerCase(); vb = (b.name||'').toLowerCase(); break;
+      case 2: va = a.point_balance||0; vb = b.point_balance||0; break;
+      case 3: va = (a.point_balance||0)+(a.point_spent||0); vb = (b.point_balance||0)+(b.point_spent||0); break;
+      case 4: va = a.point_earned||0; vb = b.point_earned||0; break;
+      case 5: va = a.point_spent||0; vb = b.point_spent||0; break;
+      case 6: va = a.total_spent||0; vb = b.total_spent||0; break;
+      case 7: va = a.orders||0; vb = b.orders||0; break;
+      case 8: va = a.last_order||''; vb = b.last_order||''; break;
+      case 9: va = (a.city||'').toLowerCase(); vb = (b.city||'').toLowerCase(); break;
+      default: va = 0; vb = 0;
+    }}
+    if (va < vb) return pontosSortAsc ? -1 : 1;
+    if (va > vb) return pontosSortAsc ? 1 : -1;
+    return 0;
+  }});
+  const fmtN = n => n.toLocaleString('pt-PT');
+  const rows = sorted.map((c, i) => {{
+    const totalReceived = (c.point_balance||0) + (c.point_spent||0);
+    return `<tr style="border-bottom:1px solid #1e1e1e">
+      <td style="padding:9px 8px;color:#555">${{i+1}}</td>
+      <td style="padding:9px 8px">
+        <div style="font-weight:600;color:#e0e0e0">${{c.name||'—'}}</div>
+        <div style="color:#555;font-size:.77rem">${{c.email||''}}</div>
+      </td>
+      <td style="padding:9px 8px;text-align:right;color:var(--gold);font-weight:700">${{fmtN(c.point_balance||0)}}</td>
+      <td style="padding:9px 8px;text-align:right;color:#a0c0e0">${{fmtN(totalReceived)}}</td>
+      <td style="padding:9px 8px;text-align:right;color:#888">${{fmtN(c.point_earned||0)}}</td>
+      <td style="padding:9px 8px;text-align:right;color:#888">${{fmtN(c.point_spent||0)}}</td>
+      <td style="padding:9px 8px;text-align:right">${{(c.total_spent||0).toFixed(2)}}€</td>
+      <td style="padding:9px 8px;text-align:right">${{c.orders||0}}</td>
+      <td style="padding:9px 8px;text-align:right;color:#666">${{c.last_order||'—'}}</td>
+      <td style="padding:9px 8px;color:#888">${{c.city||'—'}}</td>
+    </tr>`;
+  }}).join('');
+  document.getElementById('pontos-tbody').innerHTML = rows;
+  document.getElementById('pontos-cnt').textContent = sorted.length + ' clientes';
 }}
 
 // ── RFV: Carregamento lazy ────────────────────────────────────────────────────
