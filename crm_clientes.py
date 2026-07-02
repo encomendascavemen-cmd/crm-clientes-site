@@ -346,7 +346,7 @@ def build_crm(orders):
     return result
 
 
-def generate_html(customers, generated_at):
+def generate_html(customers, generated_at, show_lojas_tab=False):
     from collections import Counter, defaultdict
 
     total_customers = len(customers)
@@ -392,6 +392,14 @@ def generate_html(customers, generated_at):
         '2_5':'new','2_4':'promising','2_3':'promising','2_2':'hibernating','2_1':'lost',
         '1_5':'new','1_4':'new','1_3':'promising','1_2':'lost','1_1':'lost',
     }.items()) + "}"
+
+    # Aba opcional "Clientes Loja" (só no CRM do site) — embebe o CRM das lojas via iframe.
+    lojas_btn = ('<button class="tab-btn" id="tab-btn-lojas" onclick="switchTab(\'lojas\',this)">🏪 Clientes Loja</button>'
+                 if show_lojas_tab else '')
+    lojas_tab = ('<div id="tab-lojas" style="display:none">'
+                 '<iframe id="lojasFrame" src="" title="Clientes Loja" '
+                 'style="width:100%;height:calc(100vh - 56px);border:0;display:block"></iframe></div>'
+                 if show_lojas_tab else '')
 
     return f"""<!DOCTYPE html>
 <html lang="pt">
@@ -616,7 +624,7 @@ thead th.sorted{{color:var(--gold);}}
     <button class="tab-btn active" id="tab-btn-clientes" onclick="switchTab('clientes',this)">👥 Clientes</button>
     <button class="tab-btn" id="tab-btn-rfv" onclick="switchTab('rfv',this)">📊 Matriz RFV</button>
     <button class="tab-btn" id="tab-btn-pontos" onclick="switchTab('pontos',this)">🏆 Pontos</button>
-    <a class="tab-btn" id="tab-link-lojas" href="/crm-lojas" style="text-decoration:none;display:inline-flex;align-items:center">🏪 CRM Lojas</a>
+    {lojas_btn}
   </div>
 </header>
 
@@ -881,6 +889,8 @@ thead th.sorted{{color:var(--gold);}}
   </div>
 </div><!-- /tab-pontos -->
 
+{lojas_tab}
+
 <!-- Profile Modal -->
 <div class="overlay" id="overlay" onclick="closeProfile(event)">
   <div class="drawer" id="drawer">
@@ -948,13 +958,18 @@ let activeSegment = null;
 
 // ── Tab Switching ─────────────────────────────────────────────────────────────
 function switchTab(tab, btn) {{
-  document.getElementById('tab-clientes').style.display = tab === 'clientes' ? '' : 'none';
-  document.getElementById('tab-rfv').style.display       = tab === 'rfv'      ? '' : 'none';
-  document.getElementById('tab-pontos').style.display    = tab === 'pontos'   ? '' : 'none';
+  ['clientes','rfv','pontos','lojas'].forEach(t => {{
+    const el = document.getElementById('tab-'+t);
+    if (el) el.style.display = (t === tab) ? '' : 'none';
+  }});
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (tab === 'rfv' && !rfvLoaded) loadRFV();
   if (tab === 'pontos' && !pontosLoaded) loadPontos();
+  if (tab === 'lojas') {{
+    const f = document.getElementById('lojasFrame');
+    if (f && !f.src) f.src = '/crm-lojas?embed=1';   // lazy-load na 1ª abertura
+  }}
 }}
 
 // ── Pontos: globals ───────────────────────────────────────────────────────────
@@ -2052,8 +2067,8 @@ def main():
         json.dump(customers, f, ensure_ascii=False)
     print(f"✅ Dados guardados: {data_path} ({os.path.getsize(data_path)//1024}KB)")
 
-    # Gera HTML leve (sem JSON embutido)
-    html = generate_html(customers, generated_at)
+    # Gera HTML leve (sem JSON embutido) — com a aba "Clientes Loja" (lojas físicas)
+    html = generate_html(customers, generated_at, show_lojas_tab=True)
     output = os.path.join(os.path.dirname(os.path.abspath(__file__)), OUTPUT_HTML)
     with open(output, "w", encoding="utf-8") as f:
         f.write(html)

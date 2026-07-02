@@ -205,6 +205,68 @@ def load_crm_data():
     # pontos are loaded separately via load_pontos_data()
 
 
+# ── CRM LOJAS FÍSICAS (Moloni) ────────────────────────────────────────────────
+_crm_lojas_customers = []   # lista completa com todos os campos
+_crm_lojas_lite      = []   # lista leve para a tabela
+_crm_lojas_rfv       = []   # lista com campos rfv para a matriz
+
+def load_crm_lojas_data():
+    """Carrega crm_lojas_data.json (ou Neon) em memória e pré-computa lite e rfv."""
+    global _crm_lojas_customers, _crm_lojas_lite, _crm_lojas_rfv
+    data_path = os.path.join(SCRIPT_DIR, "crm_lojas_data.json")
+    if os.path.exists(data_path):
+        with open(data_path, encoding="utf-8") as f:
+            _crm_lojas_customers = json.load(f)
+        print(f"✅ crm_lojas_data.json carregado do disco: {len(_crm_lojas_customers)} clientes")
+    else:
+        db_data = neon_load("crm_lojas_data")
+        if db_data:
+            _crm_lojas_customers = db_data
+            print(f"✅ crm_lojas_data carregado do Neon: {len(_crm_lojas_customers)} clientes")
+        else:
+            print("⚠️  crm_lojas_data: ficheiro e Neon vazios — usa 'Dados Novos' no /crm-lojas para carregar")
+            return
+    _crm_lojas_lite = [{
+        "email":        c["email"],
+        "name":         c["name"],
+        "is_guest":     False,
+        "phone":        c.get("phone", ""),
+        "city":         c.get("city", ""),
+        "region":       c.get("region", ""),
+        "postcode":     c.get("postcode", ""),
+        "country":      c.get("country", "PT"),
+        "vat":          c.get("vat", ""),
+        "store_label":  c.get("store_label", ""),
+        "anonymous":    c.get("anonymous", False),
+        "total_orders": c["total_orders"],
+        "total_spent":  c["total_spent"],
+        "avg_order":    c["avg_order"],
+        "first_order":  c["first_order"],
+        "last_order":   c["last_order"],
+        "days_since":   c["days_since"],
+        "top_product":  c["products"][0]["name"] if c.get("products") else "",
+    } for c in _crm_lojas_customers]
+    _crm_lojas_rfv = [{
+        "email":        c["email"],
+        "name":         c.get("name", ""),
+        "is_guest":     False,
+        "city":         c.get("city", ""),
+        "region":       c.get("region", ""),
+        "store_label":  c.get("store_label", ""),
+        "anonymous":    c.get("anonymous", False),
+        "total_orders": c["total_orders"],
+        "total_spent":  c["total_spent"],
+        "last_order":   c.get("last_order", ""),
+        "days_since":   c.get("days_since", ""),
+        "rfv_r":        c.get("rfv_r", 1),
+        "rfv_f":        c.get("rfv_f", 1),
+        "rfv_v":        c.get("rfv_v", 1),
+        "rfv_score":    c.get("rfv_score", 3),
+        "rfv_segment":  c.get("rfv_segment", "lost"),
+    } for c in _crm_lojas_customers]
+    print(f"✅ CRM Lojas em memória: {len(_crm_lojas_customers)} clientes")
+
+
 def load_pontos_data():
     """Carrega pontos_data do Neon para memória."""
     global _crm_pontos
@@ -310,6 +372,7 @@ def load_precomputed():
     neon_init()
     load_crm_data()
     load_pontos_data()
+    load_crm_lojas_data()
     print(f"   Intervalo: {min(_monthly_cache) if _monthly_cache else '—'} → {max(_monthly_cache) if _monthly_cache else '—'}")
 
 def _load_month_cache(month_key, mdata):
@@ -753,6 +816,97 @@ def api_crm_customer(idx):
         return jsonify({"error": "Cliente não encontrado"}), 404
     return jsonify(_crm_customers[idx])
 
+# ══════════════════ CRM LOJAS FÍSICAS (Moloni) ══════════════════════════════
+@app.route("/crm-lojas")
+def crm_lojas_page():
+    # ?embed=1 → esconde o logo/refresh do cabeçalho (usado quando embebido na aba
+    # "Clientes Loja" do CRM do site); mantém as sub-abas Clientes/Matriz RFV.
+    if request.args.get("embed") == "1":
+        path = os.path.join(SCRIPT_DIR, "crm_clientes_lojas.html")
+        try:
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+        except FileNotFoundError:
+            return "CRM das lojas ainda não gerado. Corre crm_clientes_lojas.py.", 404
+        inject = ("<style>header .logo,header .gen,#btnRefresh,#btnFull,"
+                  "header a.tab-btn{display:none!important}"
+                  "header{padding-top:8px;padding-bottom:8px}</style></head>")
+        return html.replace("</head>", inject, 1)
+    return send_from_directory(SCRIPT_DIR, "crm_clientes_lojas.html")
+
+_crm_lojas_refresh_status = {"running": False, "log": [], "last_run": "", "error": ""}
+
+@app.route("/api/crm-lojas/refresh")
+def api_crm_lojas_refresh():
+    """Corre crm_clientes_lojas.py e regenera o HTML. ?full=1 ignora a cache (Moloni, ~1-2h)."""
+    if _crm_lojas_refresh_status["running"]:
+        return jsonify({"ok": False, "error": "Atualização já em curso"}), 409
+    full = request.args.get("full", "0") == "1"
+
+    def run():
+        _crm_lojas_refresh_status["running"] = True
+        _crm_lojas_refresh_status["log"] = []
+        _crm_lojas_refresh_status["error"] = ""
+        try:
+            script = os.path.join(SCRIPT_DIR, "crm_clientes_lojas.py")
+            cmd = ["python3", script] + (["--refresh"] if full else [])
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                    text=True, cwd=SCRIPT_DIR)
+            for line in proc.stdout:
+                _crm_lojas_refresh_status["log"].append(line.rstrip())
+            proc.wait()
+            if proc.returncode != 0:
+                _crm_lojas_refresh_status["error"] = f"Erro ao correr script (código {proc.returncode})"
+            else:
+                load_crm_lojas_data()
+                if _crm_lojas_customers:
+                    neon_save("crm_lojas_data", _crm_lojas_customers)
+        except Exception as e:
+            _crm_lojas_refresh_status["error"] = str(e)
+        finally:
+            _crm_lojas_refresh_status["running"] = False
+            _crm_lojas_refresh_status["last_run"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"ok": True, "full": full})
+
+@app.route("/api/crm-lojas/status")
+def api_crm_lojas_status():
+    return jsonify(_crm_lojas_refresh_status)
+
+@app.route("/api/crm-lojas/lite")
+def api_crm_lojas_lite():
+    if not _crm_lojas_lite:
+        load_crm_lojas_data()
+    if not _crm_lojas_lite:
+        return jsonify({"error": "crm_lojas_data.json não encontrado. Corre crm_clientes_lojas.py primeiro."}), 404
+    from flask import make_response
+    resp = make_response(json.dumps(_crm_lojas_lite, ensure_ascii=False))
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+@app.route("/api/crm-lojas/customer/<int:idx>")
+def api_crm_lojas_customer(idx):
+    if not _crm_lojas_customers:
+        load_crm_lojas_data()
+    if not _crm_lojas_customers:
+        return jsonify({"error": "crm_lojas_data.json não encontrado. Corre crm_clientes_lojas.py primeiro."}), 404
+    if idx < 0 or idx >= len(_crm_lojas_customers):
+        return jsonify({"error": "Cliente não encontrado"}), 404
+    return jsonify(_crm_lojas_customers[idx])
+
+@app.route("/api/crm-lojas/rfv")
+def api_crm_lojas_rfv():
+    if not _crm_lojas_rfv:
+        load_crm_lojas_data()
+    if not _crm_lojas_rfv:
+        return jsonify({"error": "crm_lojas_data.json não encontrado"}), 404
+    from flask import make_response
+    resp = make_response(json.dumps(_crm_lojas_rfv, ensure_ascii=False))
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    return resp
+
 @app.route("/api/categorize_suggestions")
 def api_categorize():
     path = os.path.join(SCRIPT_DIR, "categorize_suggestions.json")
@@ -938,9 +1092,12 @@ def api_products():
     prod_agg, cat_agg, store_agg, total_rev, total_qty = _aggregate_period(
         from_key, to_key, granularity, buckets, store_filter)
 
-    # ── Unique clients ──
-    unique_clients     = _unique_clients(from_key, to_key, store_filter)
-    avg_ticket_client  = round(total_rev / unique_clients, 2) if unique_clients else 0
+    # ── Encomendas (nº de documentos/vendas das lojas físicas) ──
+    # _unique_clients conta os documentos únicos por dia/loja (exclui Online e NC)
+    total_orders       = _unique_clients(from_key, to_key, store_filter)
+    unique_clients     = total_orders  # alias retrocompatível
+    avg_ticket_order   = round(total_rev / total_orders, 2) if total_orders else 0
+    avg_ticket_client  = avg_ticket_order  # alias retrocompatível
 
     # ── Previous period ──
     period_days = (to_dt - from_dt).days + 1
@@ -960,6 +1117,10 @@ def api_products():
 
     yoy_prod, yoy_cat, yoy_store, yoy_total_rev, yoy_total_qty = _aggregate_period(
         yoy_from_key, yoy_to_key, store_filter=store_filter)
+
+    # Encomendas dos períodos anterior e ano-anterior (para comparação do ticket)
+    prev_total_orders = _unique_clients(prev_from_key, prev_to_key, store_filter)
+    yoy_total_orders  = _unique_clients(yoy_from_key, yoy_to_key, store_filter)
 
     # ── Custom comparison period (compare_from / compare_to) ──
     compare_from_str = request.args.get("compare_from", "")
@@ -1083,6 +1244,10 @@ def api_products():
         "yoy_rev_change":     _pct_change(total_rev, yoy_total_rev),
         "yoy_qty_change":     _pct_change(total_qty, yoy_total_qty),
         "unique_products":      len(prod_agg),
+        "total_orders":         total_orders,
+        "prev_total_orders":    prev_total_orders,
+        "yoy_total_orders":     yoy_total_orders,
+        "avg_ticket_order":     avg_ticket_order,
         "unique_clients":       unique_clients,
         "avg_ticket_client":    avg_ticket_client,
         "categories":           cats_sorted,
@@ -1098,6 +1263,7 @@ def api_products():
         result["compare_to"]            = compare_to_key
         result["compare_total_revenue"] = compare_total_rev
         result["compare_total_qty"]     = compare_total_qty
+        result["compare_total_orders"]  = _unique_clients(compare_from_key, compare_to_key, store_filter)
         result["compare_rev_change"]    = _pct_change(total_rev, compare_total_rev)
         result["compare_qty_change"]    = _pct_change(total_qty, compare_total_qty)
 

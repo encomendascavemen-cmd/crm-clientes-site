@@ -23,6 +23,12 @@ crm_data.json
 crm_orders_cache.json
 cache/
 
+# Caches da extração das lojas (Moloni) — regeneradas localmente, não vão para produção
+crm_lojas_docs_cache.json
+crm_lojas_custs_cache.json
+crm_lojas_getone_cache.json
+# NOTA: crm_lojas_data.json É committed (produção lê do disco; ver crm_clientes_lojas.py)
+
 # Claude workspace
 .claude/
 meta_conversions.log

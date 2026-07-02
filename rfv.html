@@ -82,7 +82,7 @@ tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:
 <body>
 <header>
   <div class="logo">CAVEMEN <span>· RFV</span></div>
-  <div class="gen">Gerado em 29/06/2026 16:56 · 5,389 clientes</div>
+  <div class="gen">Gerado em 02/07/2026 10:33 · 5,389 clientes</div>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
     <a href="/crm" class="back-btn">← CRM</a>
   </div>
@@ -90,9 +90,9 @@ tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:
 
 <div class="stats">
   <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v">5,389</div><div class="stat-s">com encomendas válidas</div></div>
-  <div class="stat"><div class="stat-l">Champions + Fiéis</div><div class="stat-v" id="s-champ">170</div><div class="stat-s">3.2% do total</div></div>
-  <div class="stat"><div class="stat-l">Em Risco + Não Perder</div><div class="stat-v" id="s-risk">170</div><div class="stat-s">reactivar urgente</div></div>
-  <div class="stat"><div class="stat-l">Receita Champions</div><div class="stat-v">62,335€</div><div class="stat-s">segmento topo</div></div>
+  <div class="stat"><div class="stat-l">Champions + Fiéis</div><div class="stat-v" id="s-champ">168</div><div class="stat-s">3.1% do total</div></div>
+  <div class="stat"><div class="stat-l">Em Risco + Não Perder</div><div class="stat-v" id="s-risk">172</div><div class="stat-s">reactivar urgente</div></div>
+  <div class="stat"><div class="stat-l">Receita Champions</div><div class="stat-v">59,644€</div><div class="stat-s">segmento topo</div></div>
 </div>
 
 <div class="main-wrap">
@@ -165,10 +165,10 @@ tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:
 </div>
 
 <script>
-const MATRIX_DATA = {"5_4": 22, "4_5": 15, "5_5": 16, "4_4": 51, "5_3": 16, "4_2": 95, "5_1": 5, "3_1": 259, "3_2": 180, "3_5": 27, "5_2": 12, "4_3": 50, "4_1": 58, "2_2": 202, "3_3": 92, "1_1": 2534, "1_2": 575, "2_1": 624, "3_4": 57, "2_4": 44, "1_4": 96, "1_3": 205, "1_5": 53, "2_3": 80, "2_5": 21};
+const MATRIX_DATA = {"5_4": 23, "4_5": 13, "5_5": 13, "4_4": 50, "5_3": 18, "4_2": 94, "5_1": 6, "3_1": 264, "3_2": 181, "3_5": 23, "5_2": 11, "4_3": 51, "4_1": 61, "2_1": 630, "2_2": 201, "3_3": 89, "1_1": 2545, "1_2": 570, "3_4": 58, "2_4": 44, "1_4": 99, "1_3": 205, "2_3": 76, "1_5": 44, "2_5": 20};
 const SEGMENTS_META = {"champions": {"name": "Champions", "color": "#e8c98a", "icon": "\ud83c\udfc6", "desc": "Compraram recentemente, frequentemente e gastaram muito"}, "loyal": {"name": "Clientes Fi\u00e9is", "color": "#4caf89", "icon": "\ud83d\udc9a", "desc": "Compram com frequ\u00eancia e gastam bem"}, "potential": {"name": "Potenciais Fi\u00e9is", "color": "#5b9bd5", "icon": "\u2b50", "desc": "Clientes recentes com potencial para fidelizar"}, "new": {"name": "Novos Clientes", "color": "#7ec8a4", "icon": "\ud83c\udd95", "desc": "Compraram pela primeira vez recentemente"}, "promising": {"name": "Promissores", "color": "#a8c8ff", "icon": "\ud83c\udf31", "desc": "Mostram interesse, ainda a crescer"}, "attention": {"name": "Precisam Aten\u00e7\u00e3o", "color": "#f0a732", "icon": "\u26a0\ufe0f", "desc": "Acima da m\u00e9dia mas a distanciar-se"}, "at_risk": {"name": "Em Risco", "color": "#e07054", "icon": "\ud83d\udd34", "desc": "Compravam muito mas n\u00e3o compram h\u00e1 algum tempo"}, "cant_lose": {"name": "N\u00e3o Perder", "color": "#c94b4b", "icon": "\ud83d\udea8", "desc": "Grandes compradores inativos \u2014 reactivar urgente"}, "hibernating": {"name": "A Hibernar", "color": "#666666", "icon": "\ud83d\ude34", "desc": "\u00daltima compra h\u00e1 muito tempo, pouca frequ\u00eancia"}, "lost": {"name": "Perdidos", "color": "#333333", "icon": "\ud83d\udc80", "desc": "Inactivos h\u00e1 muito tempo e pouco frequentes"}};
-const SEG_COUNTS = {"champions": 53, "loyal": 117, "at_risk": 107, "cant_lose": 63, "hibernating": 461, "attention": 272, "potential": 84, "lost": 3733, "promising": 329, "new": 170};
-const SEG_REVENUE = {"champions": 62334.91, "loyal": 73339.16, "at_risk": 60040.58, "cant_lose": 31458.24, "hibernating": 107140.97, "attention": 79929.71, "potential": 25397.86, "lost": 348975.45, "promising": 36116.6, "new": 17799.76};
+const SEG_COUNTS = {"champions": 49, "loyal": 119, "at_risk": 105, "cant_lose": 67, "hibernating": 465, "attention": 270, "potential": 81, "lost": 3745, "promising": 325, "new": 163};
+const SEG_REVENUE = {"champions": 59643.57, "loyal": 75192.82, "at_risk": 58444.09, "cant_lose": 33892.41, "hibernating": 107206.38, "attention": 79182.6, "potential": 24812.98, "lost": 351179.68, "promising": 35639.3, "new": 17339.41};
 const TOTAL_REVENUE = 842533.24;
 const SEG_TABLE = {
   '5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose',

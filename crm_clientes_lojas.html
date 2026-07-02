@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CRM · Cavemen Store</title>
+<title>CRM Lojas · Cavemen Store</title>
 <style>
 :root{--bg:#0f0f0f;--s1:#1a1a1a;--s2:#222;--s3:#2a2a2a;--border:#2e2e2e;--text:#e8e8e8;--muted:#777;--accent:#c9a96e;--gold:#e8c98a;--green:#4caf89;--red:#e05454;--blue:#5b9bd5;--orange:#f0a732;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -211,17 +211,17 @@ thead th.sorted{color:var(--gold);}
 <body>
 
 <header>
-  <div class="logo">CAVEMEN <span>· CRM</span></div>
-  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 02/07/2026 10:33 · 5,389 clientes</div>
+  <div class="logo">CAVEMEN <span>· CRM Lojas</span></div>
+  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 02/07/2026 10:33 · 4,611 clientes</div>
   <div style="display:flex;gap:8px;margin-left:auto;">
     <button class="refresh-btn" id="btnRefresh" onclick="refreshCRM(false)" title="Atualiza usando cache (rápido)">↻ Atualizar</button>
-    <button class="refresh-btn refresh-full" id="btnFull" onclick="refreshCRM(true)" title="Vai buscar dados novos ao Magento (~2 min)">⬇ Dados Novos</button>
+    <button class="refresh-btn refresh-full" id="btnFull" onclick="refreshCRM(true)" title="Vai buscar dados novos ao Moloni (~1-2h, limite 200 pedidos/min)">⬇ Dados Novos</button>
   </div>
   <div class="tab-nav">
     <button class="tab-btn active" id="tab-btn-clientes" onclick="switchTab('clientes',this)">👥 Clientes</button>
     <button class="tab-btn" id="tab-btn-rfv" onclick="switchTab('rfv',this)">📊 Matriz RFV</button>
-    <button class="tab-btn" id="tab-btn-pontos" onclick="switchTab('pontos',this)">🏆 Pontos</button>
-    <button class="tab-btn" id="tab-btn-lojas" onclick="switchTab('lojas',this)">🏪 Clientes Loja</button>
+    <a class="tab-btn" href="/crm" style="text-decoration:none;display:inline-flex;align-items:center">🌐 CRM Site</a>
+    
   </div>
 </header>
 
@@ -235,7 +235,7 @@ thead th.sorted{color:var(--gold);}
 <div id="tab-clientes">
 
 <div class="stats" id="statsBar">
-  <div class="stat"><div class="stat-l">Clientes únicos</div><div class="stat-v" id="s-cu">…</div><div class="stat-s">loja online</div></div>
+  <div class="stat"><div class="stat-l">Clientes únicos</div><div class="stat-v" id="s-cu">…</div><div class="stat-s">lojas físicas</div></div>
   <div class="stat"><div class="stat-l">Receita total</div><div class="stat-v" id="s-rev">…</div><div class="stat-s">encomendas válidas</div></div>
   <div class="stat"><div class="stat-l">Encomendas</div><div class="stat-v" id="s-ord">…</div><div class="stat-s">completas/processadas</div></div>
   <div class="stat"><div class="stat-l">Ticket médio</div><div class="stat-v" id="s-avg">…</div><div class="stat-s">por encomenda</div></div>
@@ -247,8 +247,11 @@ thead th.sorted{color:var(--gold);}
   <div class="search"><input type="text" id="searchInput" placeholder="Pesquisar por nome ou email…" oninput="applyFilters()"></div>
   <button class="fbtn on" onclick="setFilter('all',this)">Todos</button>
   <button class="fbtn" onclick="setFilter('multi',this)">Recorrentes (2+)</button>
-  <button class="fbtn" onclick="setFilter('member',this)">Registados</button>
-  <button class="fbtn" onclick="setFilter('guest',this)">Guests</button>
+  <button class="fbtn" onclick="setFilter('store:Guimarães',this)">Guimarães</button>
+  <button class="fbtn" onclick="setFilter('store:Braga',this)">Braga</button>
+  <button class="fbtn" onclick="setFilter('store:Porto',this)">Porto</button>
+  <button class="fbtn" onclick="setFilter('anon',this)" title="Balcão / Consumidor Final (não identificado)">🏪 Anónimos</button>
+  <button class="fbtn" onclick="setFilter('contactable',this)" title="Clientes com email ou telefone (úteis para campanhas)">📧 Contactáveis</button>
   <button class="fbtn" onclick="setFilter('recent',this)">Activos (30d)</button>
 
   <div class="date-filter" id="dateFilter">
@@ -292,7 +295,7 @@ thead th.sorted{color:var(--gold);}
 <div id="tab-rfv" style="display:none">
 
 <div class="stats-4">
-  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">5,389</div><div class="stat-s">com encomendas válidas</div></div>
+  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">4,611</div><div class="stat-s">com encomendas válidas</div></div>
   <div class="stat"><div class="stat-l">Champions + Fiéis</div><div class="stat-v" id="rfv-s-champ">—</div><div class="stat-s" id="rfv-s-champ-s">calculando…</div></div>
   <div class="stat"><div class="stat-l">Em Risco + Não Perder</div><div class="stat-v" id="rfv-s-risk">—</div><div class="stat-s">reactivar urgente</div></div>
   <div class="stat"><div class="stat-l">Receita Champions</div><div class="stat-v" id="rfv-s-rev">—</div><div class="stat-s">segmento topo</div></div>
@@ -380,11 +383,11 @@ thead th.sorted{color:var(--gold);}
                 <span class="guide-dim-sub">— total gasto na loja</span>
               </div>
               <table class="guide-table">
-                <tr><td class="guide-score" style="color:#e8c98a;">V=5</td><td class="guide-range">≥ 224€</td><td class="guide-desc">Top 20%</td></tr>
-                <tr><td class="guide-score" style="color:#c9a96e;">V=4</td><td class="guide-range">107–224€</td><td class="guide-desc">Acima da média</td></tr>
-                <tr><td class="guide-score" style="color:#a88a52;">V=3</td><td class="guide-range">70–107€</td><td class="guide-desc">Valor médio</td></tr>
-                <tr><td class="guide-score" style="color:#888;">V=2</td><td class="guide-range">45–70€</td><td class="guide-desc">Abaixo da média</td></tr>
-                <tr><td class="guide-score" style="color:#555;">V=1</td><td class="guide-range">&lt; 45€</td><td class="guide-desc">Valor baixo</td></tr>
+                <tr><td class="guide-score" style="color:#e8c98a;">V=5</td><td class="guide-range">≥ 420€</td><td class="guide-desc">Top 20%</td></tr>
+                <tr><td class="guide-score" style="color:#c9a96e;">V=4</td><td class="guide-range">271€–420€</td><td class="guide-desc">Acima da média</td></tr>
+                <tr><td class="guide-score" style="color:#a88a52;">V=3</td><td class="guide-range">168€–271€</td><td class="guide-desc">Valor médio</td></tr>
+                <tr><td class="guide-score" style="color:#888;">V=2</td><td class="guide-range">85€–168€</td><td class="guide-desc">Abaixo da média</td></tr>
+                <tr><td class="guide-score" style="color:#555;">V=1</td><td class="guide-range">&lt; 85€</td><td class="guide-desc">Valor baixo</td></tr>
               </table>
               <div style="font-size:.65rem;color:var(--muted);margin-top:5px;">⚠ Breakpoints do V recalculam com novos clientes.</div>
             </div>
@@ -475,7 +478,7 @@ thead th.sorted{color:var(--gold);}
           <th onclick="pontosSortTbl(3)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Pontos disponíveis + pontos já usados = total alguma vez recebido">Total Recebido</th>
           <th onclick="pontosSortTbl(4)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Pontos ganhos apenas através de compras online">Pts de Compras</th>
           <th onclick="pontosSortTbl(5)" style="padding:10px 8px;text-align:right;cursor:pointer">Pontos Usados</th>
-          <th onclick="pontosSortTbl(6)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Apenas vendas online (Magento). Compras em loja física não incluídas.">Gasto Online</th>
+          <th onclick="pontosSortTbl(6)" style="padding:10px 8px;text-align:right;cursor:pointer" title="Apenas vendas online.">Gasto Online</th>
           <th onclick="pontosSortTbl(7)" style="padding:10px 8px;text-align:right;cursor:pointer">Encomendas</th>
           <th onclick="pontosSortTbl(8)" style="padding:10px 8px;text-align:right;cursor:pointer">Última Compra</th>
           <th onclick="pontosSortTbl(9)" style="padding:10px 8px;text-align:left;cursor:pointer">Cidade</th>
@@ -486,7 +489,7 @@ thead th.sorted{color:var(--gold);}
   </div>
 </div><!-- /tab-pontos -->
 
-<div id="tab-lojas" style="display:none"><iframe id="lojasFrame" src="" title="Clientes Loja" style="width:100%;height:calc(100vh - 56px);border:0;display:block"></iframe></div>
+
 
 <!-- Profile Modal -->
 <div class="overlay" id="overlay" onclick="closeProfile(event)">
@@ -505,10 +508,10 @@ thead th.sorted{color:var(--gold);}
 </div>
 
 <script>
-const STATS = {"total_customers": 5389, "total_revenue": 842533.0, "total_orders": 10140, "avg_order": 83.09, "recurring": 1926, "top10_revenue": 25029.0, "top10_pct": 3.0, "recurring_pct": 36.0, "generated_at": "02/07/2026 10:33"};
+const STATS = {"total_customers": 4611, "total_revenue": 2372862.0, "total_orders": 15634, "avg_order": 151.78, "recurring": 1376, "top10_revenue": 1016584.0, "top10_pct": 42.8, "recurring_pct": 30.0, "generated_at": "02/07/2026 10:33"};
 const STATUS_COLORS = {"complete": "#4caf89", "processing": "#5b9bd5", "closed": "#888", "canceled": "#e05454", "pending": "#f0a732", "holded": "#888", "pending_payment": "#f0a732"};
 const STATUS_LABELS = {"complete": "Completa", "processing": "Em processo", "closed": "Fechada", "canceled": "Cancelada", "pending": "Pendente", "holded": "Em espera", "pending_payment": "Pag. pendente"};
-const MATRIX_DATA = {"5_4": 23, "4_5": 13, "5_5": 13, "4_4": 50, "5_3": 18, "4_2": 94, "5_1": 6, "3_1": 264, "3_2": 181, "3_5": 23, "5_2": 11, "4_3": 51, "4_1": 61, "2_1": 630, "2_2": 201, "3_3": 89, "1_1": 2545, "1_2": 570, "3_4": 58, "2_4": 44, "1_4": 99, "1_3": 205, "2_3": 76, "1_5": 44, "2_5": 20};
+const MATRIX_DATA = {"5_1": 1, "5_2": 9, "3_2": 92, "5_5": 6, "4_5": 26, "5_4": 5, "3_4": 55, "5_3": 3, "4_4": 31, "2_4": 95, "3_1": 129, "3_5": 39, "4_3": 29, "3_3": 56, "2_1": 400, "4_1": 28, "4_2": 43, "1_1": 1844, "2_5": 70, "1_5": 177, "1_3": 293, "1_2": 557, "2_2": 175, "1_4": 364, "2_3": 84};
 const SEGMENTS_META = {"champions": {"name": "Champions", "color": "#e8c98a", "icon": "\ud83c\udfc6", "desc": "Compraram recentemente, frequentemente e gastaram muito"}, "loyal": {"name": "Clientes Fi\u00e9is", "color": "#4caf89", "icon": "\ud83d\udc9a", "desc": "Compram com frequ\u00eancia e gastam bem"}, "potential": {"name": "Potenciais Fi\u00e9is", "color": "#5b9bd5", "icon": "\u2b50", "desc": "Clientes recentes com potencial para fidelizar"}, "new": {"name": "Novos Clientes", "color": "#7ec8a4", "icon": "\ud83c\udd95", "desc": "Compraram pela primeira vez recentemente"}, "promising": {"name": "Promissores", "color": "#a8c8ff", "icon": "\ud83c\udf31", "desc": "Mostram interesse, ainda a crescer"}, "attention": {"name": "Precisam Aten\u00e7\u00e3o", "color": "#f0a732", "icon": "\u26a0\ufe0f", "desc": "Acima da m\u00e9dia mas a distanciar-se"}, "at_risk": {"name": "Em Risco", "color": "#e07054", "icon": "\ud83d\udd34", "desc": "Compravam muito mas n\u00e3o compram h\u00e1 algum tempo"}, "cant_lose": {"name": "N\u00e3o Perder", "color": "#c94b4b", "icon": "\ud83d\udea8", "desc": "Grandes compradores inativos \u2014 reactivar urgente"}, "hibernating": {"name": "A Hibernar", "color": "#666666", "icon": "\ud83d\ude34", "desc": "\u00daltima compra h\u00e1 muito tempo, pouca frequ\u00eancia"}, "lost": {"name": "Perdidos", "color": "#333333", "icon": "\ud83d\udc80", "desc": "Inactivos h\u00e1 muito tempo e pouco frequentes"}};
 const SEG_TABLE = {'5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose','4_5':'champions','4_4':'loyal','4_3':'loyal','4_2':'at_risk','4_1':'cant_lose','3_5':'potential','3_4':'potential','3_3':'attention','3_2':'attention','3_1':'hibernating','2_5':'new','2_4':'promising','2_3':'promising','2_2':'hibernating','2_1':'lost','1_5':'new','1_4':'new','1_3':'promising','1_2':'lost','1_1':'lost'};
 let CUSTOMERS = [];
@@ -530,7 +533,7 @@ let activeSegment = null;
   document.getElementById('s-top-s').textContent = STATS.top10_pct+'% da receita';
   document.getElementById('genDate').textContent = 'Gerado em '+STATS.generated_at+' · '+fmtN(STATS.total_customers)+' clientes';
 
-  fetch('/api/crm/lite')
+  fetch('/api/crm-lojas/lite')
     .then(r => r.json())
     .then(data => {
       CUSTOMERS = data;
@@ -578,7 +581,7 @@ let pontosSortAsc = false;
 
 // ── Pontos: carregamento ──────────────────────────────────────────────────────
 function loadPontos() {
-  fetch('/api/crm/pontos')
+  fetch('/api/crm-lojas/pontos')
     .then(r => r.json())
     .then(data => {
       if (data.error) throw new Error(data.error);
@@ -662,7 +665,7 @@ function pontosRenderTable(data) {
 // ── RFV: Carregamento lazy ────────────────────────────────────────────────────
 function loadRFV() {
   buildMatrix();
-  fetch('/api/crm/rfv')
+  fetch('/api/crm-lojas/rfv')
     .then(r => r.json())
     .then(data => {
       RFV_CUSTOMERS = data;
@@ -910,7 +913,7 @@ function renderTable(data) {
   const html = data.map((c, idx) => {
     const barW = Math.min(100, (c.total_spent / maxSpent) * 100).toFixed(1);
     const isGuest = c.is_guest;
-    const badge = isGuest ? '<span class="badge guest">Guest</span>' : '<span class="badge member">Registado</span>';
+    const badge = c.store_label ? '<span class="badge member">🏪 '+c.store_label+'</span>' : '';
     const loc = [c.city, c.region].filter(Boolean).join(', ');
     const days = c.days_since;
     let daysCls = 'days-cold', daysTxt = '—';
@@ -920,7 +923,7 @@ function renderTable(data) {
     }
     const topProd = (c.top_product||'—').substring(0,40) + ((c.top_product||'').length > 40 ? '…' : '');
     const rank = idx + 1;
-    return `<tr class="customer-row" data-rank="${rank}" data-email="${c.email}" data-name="${(c.name||'').toLowerCase()}" data-orders="${c.total_orders}" data-guest="${isGuest}" data-days="${typeof days==='number'?days:9999}" data-last-order="${c.last_order||''}" onclick="openProfile(${idx})">
+    return `<tr class="customer-row" data-rank="${rank}" data-email="${c.email}" data-name="${(c.name||'').toLowerCase()}" data-orders="${c.total_orders}" data-guest="${isGuest}" data-store="${c.store_label||''}" data-anon="${c.anonymous?1:0}" data-days="${typeof days==='number'?days:9999}" data-last-order="${c.last_order||''}" onclick="openProfile(${idx})">
       <td class="td-rank${rank<=3?' rank-gold':''}">#${rank}</td>
       <td class="td-customer">
         <div class="c-name">${c.name||c.email}</div>
@@ -954,7 +957,7 @@ function openProfile(idx) {
   document.body.style.overflow = 'hidden';
 
   // Busca os dados completos ao servidor
-  fetch(`/api/crm/customer/${idx}`)
+  fetch(`/api/crm-lojas/customer/${idx}`)
     .then(r => r.json())
     .then(c => renderProfile(c))
     .catch(e => {
@@ -969,9 +972,7 @@ function renderProfile(c) {
   document.getElementById('dEmail').textContent = c.email;
 
   const badges = document.getElementById('dBadges');
-  let badgeHtml = c.is_guest
-    ? '<span class="badge guest">Guest</span>'
-    : '<span class="badge member">Cliente Registado</span>';
+  let badgeHtml = c.store_label ? '<span class="badge member">🏪 '+c.store_label+'</span>' : '';
   if (c.city) badgeHtml += `<span style="font-size:.72rem;color:var(--muted)">📍 ${c.city}${c.region ? ', '+c.region : ''}</span>`;
   badges.innerHTML = badgeHtml;
 
@@ -1093,6 +1094,9 @@ function applyFilters() {
     if (activeFilter==='member') matchF = !isGuest;
     if (activeFilter==='guest') matchF = isGuest;
     if (activeFilter==='recent') matchF = daysVal<=30;
+    if (activeFilter==='anon') matchF = row.dataset.anon==='1';
+    if (activeFilter==='contactable') matchF = (row.dataset.email||'')!=='';
+    if (activeFilter && activeFilter.indexOf('store:')===0) matchF = (row.dataset.store||'').indexOf(activeFilter.slice(6))!==-1;
 
     let matchDate = true;
     if (hasDate) {
@@ -1154,12 +1158,12 @@ function refreshCRM(full) {
   const btn2 = document.getElementById('btnFull');
 
   bar.style.display = 'flex';
-  msg.textContent = full ? 'A buscar dados novos do Magento… (pode demorar ~2 min)' : 'A atualizar dados em cache…';
+  msg.textContent = full ? 'A buscar dados novos do Moloni… (pode demorar ~1-2h — limite de 200 pedidos/min)' : 'A atualizar dados em cache…';
   log.textContent = '';
   btn1.disabled = true;
   btn2.disabled = true;
 
-  fetch('/api/crm/refresh' + (full ? '?full=1' : ''))
+  fetch('/api/crm-lojas/refresh' + (full ? '?full=1' : ''))
     .then(r => r.json())
     .then(d => {
       if (!d.ok) { alert('Erro: ' + d.error); resetRefreshUI(); return; }
@@ -1174,7 +1178,7 @@ function refreshCRM(full) {
 }
 
 function pollRefreshStatus() {
-  fetch('/api/crm/status')
+  fetch('/api/crm-lojas/status')
     .then(r => r.json())
     .then(s => {
       const log = document.getElementById('refreshLog');
