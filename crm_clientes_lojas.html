@@ -212,7 +212,7 @@ thead th.sorted{color:var(--gold);}
 
 <header>
   <div class="logo">CAVEMEN <span>· CRM Lojas</span></div>
-  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 02/07/2026 10:33 · 4,611 clientes</div>
+  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 02/07/2026 16:59 · 1,639 clientes</div>
   <div style="display:flex;gap:8px;margin-left:auto;">
     <button class="refresh-btn" id="btnRefresh" onclick="refreshCRM(false)" title="Atualiza usando cache (rápido)">↻ Atualizar</button>
     <button class="refresh-btn refresh-full" id="btnFull" onclick="refreshCRM(true)" title="Vai buscar dados novos ao Moloni (~1-2h, limite 200 pedidos/min)">⬇ Dados Novos</button>
@@ -250,7 +250,6 @@ thead th.sorted{color:var(--gold);}
   <button class="fbtn" onclick="setFilter('store:Guimarães',this)">Guimarães</button>
   <button class="fbtn" onclick="setFilter('store:Braga',this)">Braga</button>
   <button class="fbtn" onclick="setFilter('store:Porto',this)">Porto</button>
-  <button class="fbtn" onclick="setFilter('anon',this)" title="Balcão / Consumidor Final (não identificado)">🏪 Anónimos</button>
   <button class="fbtn" onclick="setFilter('contactable',this)" title="Clientes com email ou telefone (úteis para campanhas)">📧 Contactáveis</button>
   <button class="fbtn" onclick="setFilter('recent',this)">Activos (30d)</button>
 
@@ -295,7 +294,7 @@ thead th.sorted{color:var(--gold);}
 <div id="tab-rfv" style="display:none">
 
 <div class="stats-4">
-  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">4,611</div><div class="stat-s">com encomendas válidas</div></div>
+  <div class="stat"><div class="stat-l">Total Clientes</div><div class="stat-v" id="rfv-s-total">1,639</div><div class="stat-s">com encomendas válidas</div></div>
   <div class="stat"><div class="stat-l">Champions + Fiéis</div><div class="stat-v" id="rfv-s-champ">—</div><div class="stat-s" id="rfv-s-champ-s">calculando…</div></div>
   <div class="stat"><div class="stat-l">Em Risco + Não Perder</div><div class="stat-v" id="rfv-s-risk">—</div><div class="stat-s">reactivar urgente</div></div>
   <div class="stat"><div class="stat-l">Receita Champions</div><div class="stat-v" id="rfv-s-rev">—</div><div class="stat-s">segmento topo</div></div>
@@ -383,10 +382,10 @@ thead th.sorted{color:var(--gold);}
                 <span class="guide-dim-sub">— total gasto na loja</span>
               </div>
               <table class="guide-table">
-                <tr><td class="guide-score" style="color:#e8c98a;">V=5</td><td class="guide-range">≥ 420€</td><td class="guide-desc">Top 20%</td></tr>
-                <tr><td class="guide-score" style="color:#c9a96e;">V=4</td><td class="guide-range">271€–420€</td><td class="guide-desc">Acima da média</td></tr>
-                <tr><td class="guide-score" style="color:#a88a52;">V=3</td><td class="guide-range">168€–271€</td><td class="guide-desc">Valor médio</td></tr>
-                <tr><td class="guide-score" style="color:#888;">V=2</td><td class="guide-range">85€–168€</td><td class="guide-desc">Abaixo da média</td></tr>
+                <tr><td class="guide-score" style="color:#e8c98a;">V=5</td><td class="guide-range">≥ 474€</td><td class="guide-desc">Top 20%</td></tr>
+                <tr><td class="guide-score" style="color:#c9a96e;">V=4</td><td class="guide-range">289€–474€</td><td class="guide-desc">Acima da média</td></tr>
+                <tr><td class="guide-score" style="color:#a88a52;">V=3</td><td class="guide-range">169€–289€</td><td class="guide-desc">Valor médio</td></tr>
+                <tr><td class="guide-score" style="color:#888;">V=2</td><td class="guide-range">85€–169€</td><td class="guide-desc">Abaixo da média</td></tr>
                 <tr><td class="guide-score" style="color:#555;">V=1</td><td class="guide-range">&lt; 85€</td><td class="guide-desc">Valor baixo</td></tr>
               </table>
               <div style="font-size:.65rem;color:var(--muted);margin-top:5px;">⚠ Breakpoints do V recalculam com novos clientes.</div>
@@ -508,10 +507,10 @@ thead th.sorted{color:var(--gold);}
 </div>
 
 <script>
-const STATS = {"total_customers": 4611, "total_revenue": 2372862.0, "total_orders": 15634, "avg_order": 151.78, "recurring": 1376, "top10_revenue": 1016584.0, "top10_pct": 42.8, "recurring_pct": 30.0, "generated_at": "02/07/2026 10:33"};
+const STATS = {"total_customers": 1639, "total_revenue": 738088.0, "total_orders": 4475, "avg_order": 164.94, "recurring": 587, "top10_revenue": 228349.0, "top10_pct": 30.9, "recurring_pct": 36.0, "generated_at": "02/07/2026 16:59"};
 const STATUS_COLORS = {"complete": "#4caf89", "processing": "#5b9bd5", "closed": "#888", "canceled": "#e05454", "pending": "#f0a732", "holded": "#888", "pending_payment": "#f0a732"};
 const STATUS_LABELS = {"complete": "Completa", "processing": "Em processo", "closed": "Fechada", "canceled": "Cancelada", "pending": "Pendente", "holded": "Em espera", "pending_payment": "Pag. pendente"};
-const MATRIX_DATA = {"5_1": 1, "5_2": 9, "3_2": 92, "5_5": 6, "4_5": 26, "5_4": 5, "3_4": 55, "5_3": 3, "4_4": 31, "2_4": 95, "3_1": 129, "3_5": 39, "4_3": 29, "3_3": 56, "2_1": 400, "4_1": 28, "4_2": 43, "1_1": 1844, "2_5": 70, "1_5": 177, "1_3": 293, "1_2": 557, "2_2": 175, "1_4": 364, "2_3": 84};
+const MATRIX_DATA = {"5_2": 7, "5_5": 4, "4_4": 20, "2_4": 59, "5_3": 2, "5_4": 2, "4_5": 18, "3_2": 26, "3_5": 29, "3_3": 34, "3_4": 41, "4_2": 23, "2_5": 42, "4_3": 14, "4_1": 15, "2_1": 117, "1_1": 411, "1_3": 199, "1_4": 226, "2_3": 59, "2_2": 37, "3_1": 38, "1_5": 108, "1_2": 108};
 const SEGMENTS_META = {"champions": {"name": "Champions", "color": "#e8c98a", "icon": "\ud83c\udfc6", "desc": "Compraram recentemente, frequentemente e gastaram muito"}, "loyal": {"name": "Clientes Fi\u00e9is", "color": "#4caf89", "icon": "\ud83d\udc9a", "desc": "Compram com frequ\u00eancia e gastam bem"}, "potential": {"name": "Potenciais Fi\u00e9is", "color": "#5b9bd5", "icon": "\u2b50", "desc": "Clientes recentes com potencial para fidelizar"}, "new": {"name": "Novos Clientes", "color": "#7ec8a4", "icon": "\ud83c\udd95", "desc": "Compraram pela primeira vez recentemente"}, "promising": {"name": "Promissores", "color": "#a8c8ff", "icon": "\ud83c\udf31", "desc": "Mostram interesse, ainda a crescer"}, "attention": {"name": "Precisam Aten\u00e7\u00e3o", "color": "#f0a732", "icon": "\u26a0\ufe0f", "desc": "Acima da m\u00e9dia mas a distanciar-se"}, "at_risk": {"name": "Em Risco", "color": "#e07054", "icon": "\ud83d\udd34", "desc": "Compravam muito mas n\u00e3o compram h\u00e1 algum tempo"}, "cant_lose": {"name": "N\u00e3o Perder", "color": "#c94b4b", "icon": "\ud83d\udea8", "desc": "Grandes compradores inativos \u2014 reactivar urgente"}, "hibernating": {"name": "A Hibernar", "color": "#666666", "icon": "\ud83d\ude34", "desc": "\u00daltima compra h\u00e1 muito tempo, pouca frequ\u00eancia"}, "lost": {"name": "Perdidos", "color": "#333333", "icon": "\ud83d\udc80", "desc": "Inactivos h\u00e1 muito tempo e pouco frequentes"}};
 const SEG_TABLE = {'5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose','4_5':'champions','4_4':'loyal','4_3':'loyal','4_2':'at_risk','4_1':'cant_lose','3_5':'potential','3_4':'potential','3_3':'attention','3_2':'attention','3_1':'hibernating','2_5':'new','2_4':'promising','2_3':'promising','2_2':'hibernating','2_1':'lost','1_5':'new','1_4':'new','1_3':'promising','1_2':'lost','1_1':'lost'};
 let CUSTOMERS = [];
@@ -568,7 +567,9 @@ function switchTab(tab, btn) {
   if (tab === 'pontos' && !pontosLoaded) loadPontos();
   if (tab === 'lojas') {
     const f = document.getElementById('lojasFrame');
-    if (f && !f.src) f.src = '/crm-lojas?embed=1';   // lazy-load na 1ª abertura
+    // Lazy-load na 1ª abertura. Usa dataset.loaded (não !f.src) porque um
+    // <iframe> sem src tem a propriedade .src a resolver para o URL da página.
+    if (f && !f.dataset.loaded) { f.dataset.loaded = '1'; f.src = '/crm-lojas?embed=1'; }
   }
 }
 

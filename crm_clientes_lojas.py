@@ -326,13 +326,16 @@ def build_crm_lojas(docs, cust_by_id, getone):
         # Balcão / Consumidor Final: NIF genérico 999999990 SEM qualquer contacto.
         # São o "cliente da caixa" reutilizado (milhares de vendas) — não é uma pessoa.
         anonymous = (c["vat"] == "999999990") and not c["email"] and not c["phone"]
-        # "Sem qualquer dado": anónimo sem contacto E sem nome real (nome vazio ou
-        # genérico "Cliente"/"Consumidor Final"). Estes são removidos da lista.
-        nome_real = (c["name"] or "").strip().lower()
-        GENERICOS = {"", "cliente", "consumidor final", "consumidor", "cliente final", "."}
-        if anonymous and nome_real in GENERICOS:
+        # Remover da lista tudo o que aparece como "Anónimo" (balcão/Consumidor Final)
+        # ou "Cliente" (registo genérico da caixa, sem nome real). Fica só quem tem
+        # um nome real OU um contacto (email/telefone).
+        nome_l = (c["name"] or "").strip().lower()
+        GENERICOS = {"cliente", "consumidor final", "consumidor", "cliente final",
+                     "consumidor final .", "cliente ."}
+        mostra_generico = (nome_l in GENERICOS) or (nome_l == "" and not contact)
+        if anonymous or mostra_generico:
             continue
-        display_name = "🏪 Anónimo (Balcão)" if anonymous else (c["name"] or contact or f"Cliente {cid}")
+        display_name = c["name"] or contact or f"Cliente {cid}"
         result.append({
             "name":         display_name,
             "orig_name":    c["name"],
@@ -401,7 +404,6 @@ def adapt_html_for_lojas(html, customers):
          '  <button class="fbtn" onclick="setFilter(\'store:Guimarães\',this)">Guimarães</button>\n'
          '  <button class="fbtn" onclick="setFilter(\'store:Braga\',this)">Braga</button>\n'
          '  <button class="fbtn" onclick="setFilter(\'store:Porto\',this)">Porto</button>\n'
-         '  <button class="fbtn" onclick="setFilter(\'anon\',this)" title="Balcão / Consumidor Final (não identificado)">🏪 Anónimos</button>\n'
          '  <button class="fbtn" onclick="setFilter(\'contactable\',this)" title="Clientes com email ou telefone (úteis para campanhas)">📧 Contactáveis</button>'),
         # Lógica de filtro: adiciona ramos store:, anon e contactable
         ("if (activeFilter==='recent') matchF = daysVal<=30;",
