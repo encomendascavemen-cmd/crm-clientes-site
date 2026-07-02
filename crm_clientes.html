@@ -212,7 +212,7 @@ thead th.sorted{color:var(--gold);}
 
 <header>
   <div class="logo">CAVEMEN <span>· CRM</span></div>
-  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 02/07/2026 10:33 · 5,389 clientes</div>
+  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 02/07/2026 16:18 · 5,389 clientes</div>
   <div style="display:flex;gap:8px;margin-left:auto;">
     <button class="refresh-btn" id="btnRefresh" onclick="refreshCRM(false)" title="Atualiza usando cache (rápido)">↻ Atualizar</button>
     <button class="refresh-btn refresh-full" id="btnFull" onclick="refreshCRM(true)" title="Vai buscar dados novos ao Magento (~2 min)">⬇ Dados Novos</button>
@@ -486,7 +486,7 @@ thead th.sorted{color:var(--gold);}
   </div>
 </div><!-- /tab-pontos -->
 
-<div id="tab-lojas" style="display:none"><iframe id="lojasFrame" src="" title="Clientes Loja" style="width:100%;height:calc(100vh - 56px);border:0;display:block"></iframe></div>
+<div id="tab-lojas" style="display:none"><iframe id="lojasFrame" title="Clientes Loja" style="width:100%;height:calc(100vh - 56px);border:0;display:block"></iframe></div>
 
 <!-- Profile Modal -->
 <div class="overlay" id="overlay" onclick="closeProfile(event)">
@@ -505,7 +505,7 @@ thead th.sorted{color:var(--gold);}
 </div>
 
 <script>
-const STATS = {"total_customers": 5389, "total_revenue": 842533.0, "total_orders": 10140, "avg_order": 83.09, "recurring": 1926, "top10_revenue": 25029.0, "top10_pct": 3.0, "recurring_pct": 36.0, "generated_at": "02/07/2026 10:33"};
+const STATS = {"total_customers": 5389, "total_revenue": 842533.0, "total_orders": 10140, "avg_order": 83.09, "recurring": 1926, "top10_revenue": 25029.0, "top10_pct": 3.0, "recurring_pct": 36.0, "generated_at": "02/07/2026 16:18"};
 const STATUS_COLORS = {"complete": "#4caf89", "processing": "#5b9bd5", "closed": "#888", "canceled": "#e05454", "pending": "#f0a732", "holded": "#888", "pending_payment": "#f0a732"};
 const STATUS_LABELS = {"complete": "Completa", "processing": "Em processo", "closed": "Fechada", "canceled": "Cancelada", "pending": "Pendente", "holded": "Em espera", "pending_payment": "Pag. pendente"};
 const MATRIX_DATA = {"5_4": 23, "4_5": 13, "5_5": 13, "4_4": 50, "5_3": 18, "4_2": 94, "5_1": 6, "3_1": 264, "3_2": 181, "3_5": 23, "5_2": 11, "4_3": 51, "4_1": 61, "2_1": 630, "2_2": 201, "3_3": 89, "1_1": 2545, "1_2": 570, "3_4": 58, "2_4": 44, "1_4": 99, "1_3": 205, "2_3": 76, "1_5": 44, "2_5": 20};
@@ -565,7 +565,9 @@ function switchTab(tab, btn) {
   if (tab === 'pontos' && !pontosLoaded) loadPontos();
   if (tab === 'lojas') {
     const f = document.getElementById('lojasFrame');
-    if (f && !f.src) f.src = '/crm-lojas?embed=1';   // lazy-load na 1ª abertura
+    // Lazy-load na 1ª abertura. Usa dataset.loaded (não !f.src) porque um
+    // <iframe> sem src tem a propriedade .src a resolver para o URL da página.
+    if (f && !f.dataset.loaded) { f.dataset.loaded = '1'; f.src = '/crm-lojas?embed=1'; }
   }
 }
 

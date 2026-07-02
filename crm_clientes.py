@@ -397,7 +397,7 @@ def generate_html(customers, generated_at, show_lojas_tab=False):
     lojas_btn = ('<button class="tab-btn" id="tab-btn-lojas" onclick="switchTab(\'lojas\',this)">🏪 Clientes Loja</button>'
                  if show_lojas_tab else '')
     lojas_tab = ('<div id="tab-lojas" style="display:none">'
-                 '<iframe id="lojasFrame" src="" title="Clientes Loja" '
+                 '<iframe id="lojasFrame" title="Clientes Loja" '
                  'style="width:100%;height:calc(100vh - 56px);border:0;display:block"></iframe></div>'
                  if show_lojas_tab else '')
 
@@ -968,7 +968,9 @@ function switchTab(tab, btn) {{
   if (tab === 'pontos' && !pontosLoaded) loadPontos();
   if (tab === 'lojas') {{
     const f = document.getElementById('lojasFrame');
-    if (f && !f.src) f.src = '/crm-lojas?embed=1';   // lazy-load na 1ª abertura
+    // Lazy-load na 1ª abertura. Usa dataset.loaded (não !f.src) porque um
+    // <iframe> sem src tem a propriedade .src a resolver para o URL da página.
+    if (f && !f.dataset.loaded) {{ f.dataset.loaded = '1'; f.src = '/crm-lojas?embed=1'; }}
   }}
 }}
 
