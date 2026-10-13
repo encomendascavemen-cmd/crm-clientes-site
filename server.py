@@ -659,6 +659,11 @@ def api_available_months():
     return jsonify({"cached": cached, "available": available,
                     "has_products": sorted(_products_cache.keys())})
 
+@app.route("/noivos")
+def noivos_page():
+    # Página pública de agendamento; o formulário envia os pedidos para o CRM de noivos.
+    return send_from_directory(SCRIPT_DIR, "noivos.html")
+
 @app.route("/products")
 def products_page():
     return send_from_directory(SCRIPT_DIR, "products_v2.html")

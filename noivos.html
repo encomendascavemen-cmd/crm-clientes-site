@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda a tua visita · Cavemen</title>
+<meta name="description" content="Marca a tua visita numa loja Cavemen para o teu fato de noivo.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230A0A0A'/%3E%3Ctext x='50' y='70' text-anchor='middle' font-family='Georgia,serif' font-size='60' fill='%23A8936A'%3EC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0A;color:#F7F5F2;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#A8936A;text-decoration:underline}
+a:hover{color:#F7F5F2}
+*{box-sizing:border-box}
+input,select,button{font-family:inherit}
+input::placeholder{color:#6B6860}
+.field{display:flex;flex-direction:column;gap:10px}
+.field>span:first-child{font-size:11px;letter-spacing:0.35em;color:#C9C5BD}
+.field input{background:transparent;border:none;border-bottom:1px solid #4A4740;border-radius:0;padding:10px 0;font-size:17px;color:#F7F5F2;outline:none}
+.field input:focus{border-bottom-color:#A8936A}
+.err{font-size:13px;color:#F76C6F}
+.err:empty{display:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.submit{width:100%;background:#A8936A;color:#0A0A0A;border:none;padding:20px;font-size:12px;letter-spacing:0.3em;font-weight:500;cursor:pointer}
+.submit:hover{background:#F7F5F2}
+.submit:disabled{opacity:.6;cursor:wait}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main style="min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 24px 80px">
+  <div style="display:flex;flex-direction:column;align-items:center;line-height:1;margin-bottom:clamp(56px,10vh,104px)">
+    <span style="font-family:'Cormorant Garamond',serif;font-size:26px;letter-spacing:0.18em;font-weight:500">CAVEMEN</span>
+  </div>
+
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;align-items:center;text-align:center">
+    <p style="margin:0 0 24px;font-size:11px;letter-spacing:0.4em;color:#A8936A">AGENDA A TUA VISITA</p>
+    <h1 style="margin:0;font-family:'Cormorant Garamond',serif;font-weight:400;font-size:clamp(42px,7vw,72px);line-height:1.04;text-wrap:balance">Um fato feito à tua medida,<br><em style="color:#A8936A">uma história que se veste.</em></h1>
+    <p style="margin:28px 0 0;font-size:17px;font-weight:300;color:#C9C5BD;line-height:1.7;max-width:48ch;text-wrap:pretty">Cada fato de noivo começa numa conversa. Marca a visita numa das nossas lojas, sem compromisso, e vamos perceber juntos o que queres sentir no teu dia.</p>
+  </div>
+
+  <div style="width:100%;max-width:560px;margin-top:56px">
+    <form id="form" novalidate style="position:relative;display:flex;flex-direction:column;gap:28px;background:#0F0F0F;border:1px solid #1A1A1A;padding:clamp(28px,5vw,48px)">
+      <label class="field"><span>NOME</span>
+        <input name="nome" autocomplete="name" placeholder="João Silva">
+        <span class="err" data-err="nome"></span>
+      </label>
+      <label class="field"><span>EMAIL</span>
+        <input name="email" type="email" autocomplete="email" placeholder="joao@email.com">
+        <span class="err" data-err="email"></span>
+      </label>
+      <label class="field"><span>TELEFONE</span>
+        <input name="tel" type="tel" autocomplete="tel" placeholder="+351 900 000 000">
+        <span class="err" data-err="tel"></span>
+      </label>
+      <label class="field"><span>DATA DO CASAMENTO</span>
+        <input name="data" inputmode="numeric" maxlength="10" placeholder="08/10/2026">
+        <span class="err" data-err="data"></span>
+      </label>
+      <label class="field"><span>LOCALIDADE</span>
+        <input name="localidade" autocomplete="address-level2" placeholder="Ex. Braga">
+        <span class="err" data-err="localidade"></span>
+      </label>
+      <!-- campo armadilha contra bots: humanos não o veem -->
+      <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off"></label>
+      <label style="display:flex;gap:14px;align-items:flex-start;cursor:pointer;text-align:left">
+        <input name="privacidade" type="checkbox" style="width:18px;height:18px;margin:2px 0 0;accent-color:#A8936A;flex-shrink:0">
+        <span style="font-size:14px;color:#C9C5BD;line-height:1.5">Li, compreendi e aceito a <a href="#">Política de Privacidade</a> deste website.</span>
+      </label>
+      <span class="err" data-err="privacidade" style="margin-top:-16px"></span>
+      <button type="submit" class="submit">AGENDA A TUA VISITA</button>
+      <span class="err" data-err="envio" style="text-align:center"></span>
+    </form>
+
+    <div id="ok" hidden style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;background:#0F0F0F;border:1px solid #1A1A1A;padding:56px 32px">
+      <span style="font-size:11px;letter-spacing:0.4em;color:#A8936A">PEDIDO RECEBIDO</span>
+      <h2 style="margin:0;font-family:'Cormorant Garamond',serif;font-weight:400;font-size:40px;line-height:1.1">Obrigado, <span id="firstName"></span>.</h2>
+      <p style="margin:0;color:#C9C5BD;font-size:16px;line-height:1.7;font-weight:300;max-width:40ch">Vamos entrar em contacto nas próximas 24 horas para confirmar o dia e a hora da tua visita.</p>
+      <button id="reset" type="button" style="margin-top:8px;background:none;border:none;border-bottom:1px solid #A8936A;padding:4px 0;font-size:11px;letter-spacing:0.3em;cursor:pointer;color:#F7F5F2">NOVO PEDIDO</button>
+    </div>
+
+    <p style="margin:28px 0 0;text-align:center;font-size:11px;letter-spacing:0.3em;color:#6B6860;line-height:2">GUIMARÃES · BRAGA · PORTO</p>
+  </div>
+</main>
+<script>
+const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+const CRM = LOCAL ? 'http://localhost:3000' : 'https://cavemen-crm.onrender.com';
+// O CRM está no plano free do Render e adormece: acordá-lo já, enquanto o noivo preenche.
+fetch(CRM + '/health', { mode: 'no-cors' }).catch(() => {});
+
+const form = document.getElementById('form');
+const ok = document.getElementById('ok');
+const btn = form.querySelector('.submit');
+
+form.data.addEventListener('input', (ev) => {
+  const d = ev.target.value.replace(/\D/g, '').slice(0, 8);
+  ev.target.value = d.length > 4 ? `${d.slice(0,2)}/${d.slice(2,4)}/${d.slice(4)}` : d.length > 2 ? `${d.slice(0,2)}/${d.slice(2)}` : d;
+});
+form.addEventListener('input', (ev) => setErr(ev.target.name, ''));
+
+function setErr(name, msg) {
+  const el = form.querySelector(`[data-err="${name}"]`);
+  if (el) el.textContent = msg;
+}
+
+function validate(f) {
+  const e = {};
+  if (f.nome.length < 2) e.nome = 'Indica o teu nome.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Indica um email válido.';
+  if (f.tel.replace(/\D/g, '').length < 9) e.tel = 'Indica um telefone válido.';
+  const m = f.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const dt = m && new Date(+m[3], +m[2] - 1, +m[1]);
+  if (!m || dt.getDate() !== +m[1] || dt.getMonth() !== +m[2] - 1) e.data = 'Indica uma data válida (dd/mm/aaaa).';
+  if (f.localidade.length < 2) e.localidade = 'Indica a tua localidade.';
+  if (!f.privacidade) e.privacidade = 'É necessário aceitar a Política de Privacidade.';
+  return e;
+}
+
+form.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const f = {
+    nome: form.nome.value.trim(), email: form.email.value.trim(), tel: form.tel.value.trim(),
+    data: form.data.value.trim(), localidade: form.localidade.value.trim(),
+    privacidade: form.privacidade.checked, website: form.website.value,
+  };
+  form.querySelectorAll('.err').forEach(el => el.textContent = '');
+  const e = validate(f);
+  if (Object.keys(e).length) { Object.entries(e).forEach(([k, v]) => setErr(k, v)); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'A ENVIAR…';
+  try {
+    const res = await fetch(CRM + '/api/public/agendamento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(f),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    document.getElementById('firstName').textContent = f.nome.split(' ')[0];
+    form.hidden = true;
+    ok.hidden = false;
+  } catch (err) {
+    console.error(err);
+    setErr('envio', 'Não foi possível enviar o pedido. Tenta novamente daqui a pouco.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'AGENDA A TUA VISITA';
+  }
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  form.reset();
+  ok.hidden = true;
+  form.hidden = false;
+});
+</script>
+</body>
+</html>
