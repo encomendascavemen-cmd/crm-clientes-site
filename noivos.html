@@ -96,6 +96,8 @@ const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
 const CRM = LOCAL ? 'http://localhost:3000' : 'https://cavemen-crm.onrender.com';
 // O CRM está no plano free do Render e adormece: acordá-lo já, enquanto o noivo preenche.
 fetch(CRM + '/health', { mode: 'no-cors' }).catch(() => {});
+// Cópia de segurança de cada pedido numa Google Sheet (Apps Script), caso o CRM falhe.
+const BACKUP = 'https://script.google.com/macros/s/AKfycbz4BL5-FgxtpgVRo958QrA5jPMy0GGOMumwcDLlJIyWOYoqoC85KR2pAn0tQbXmONooOw/exec';
 
 const form = document.getElementById('form');
 const ok = document.getElementById('ok');
@@ -138,13 +140,17 @@ form.addEventListener('submit', async (ev) => {
 
   btn.disabled = true;
   btn.textContent = 'A ENVIAR…';
+  const body = JSON.stringify(f);
+  // text/plain + no-cors: o Apps Script não responde a pedidos CORS; não dá para ler a resposta, só saber que foi enviado.
+  const backup = fetch(BACKUP, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body, keepalive: true });
+  // keepalive: o pedido ao CRM continua mesmo que o noivo feche a página (o CRM pode estar a acordar).
+  const crm = fetch(CRM + '/api/public/agendamento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true })
+    .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); });
+  backup.catch(err => console.error('Backup:', err));
+  crm.catch(err => console.error('CRM:', err));
   try {
-    const res = await fetch(CRM + '/api/public/agendamento', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(f),
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    // Basta um dos dois receber o pedido para não se perder: confirmar logo ao primeiro.
+    await Promise.any([backup, crm]);
     document.getElementById('firstName').textContent = f.nome.split(' ')[0];
     form.hidden = true;
     ok.hidden = false;
