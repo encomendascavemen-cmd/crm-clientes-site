@@ -372,6 +372,32 @@ def generate_html(customers, generated_at, show_lojas_tab=False):
     status_colors_json = json.dumps(STATUS_COLORS)
     status_labels_json = json.dumps(STATUS_LABELS)
 
+    # Lite customer data embedded directly in HTML (bypass Neon dependency on Render)
+    lite_data = [{
+        "email":        c["email"],
+        "name":         c["name"],
+        "is_guest":     c["is_guest"],
+        "phone":        c.get("phone", ""),
+        "city":         c.get("city", ""),
+        "region":       c.get("region", ""),
+        "postcode":     c.get("postcode", ""),
+        "country":      c.get("country", "PT"),
+        "vat":          c.get("vat", ""),
+        "total_orders": c["total_orders"],
+        "total_spent":  c["total_spent"],
+        "avg_order":    c["avg_order"],
+        "first_order":  c["first_order"],
+        "last_order":   c["last_order"],
+        "days_since":   c["days_since"],
+        "top_product":  c["products"][0]["name"] if c.get("products") else "",
+        "rfv_r":        c.get("rfv_r", 1),
+        "rfv_f":        c.get("rfv_f", 1),
+        "rfv_v":        c.get("rfv_v", 1),
+        "rfv_score":    c.get("rfv_score", 3),
+        "rfv_segment":  c.get("rfv_segment", "lost"),
+    } for c in customers]
+    customers_embedded_json = json.dumps(lite_data, ensure_ascii=False, separators=(',', ':'))
+
     # RFV data for embedded matrix
     seg_counts  = Counter(c["rfv_segment"] for c in customers if "rfv_segment" in c)
     seg_revenue = defaultdict(float)
@@ -914,6 +940,7 @@ const STATUS_LABELS = {status_labels_json};
 const MATRIX_DATA = {matrix_json};
 const SEGMENTS_META = {segments_meta_json};
 const SEG_TABLE = {seg_table_js};
+const CUSTOMERS_EMBEDDED = {customers_embedded_json};
 let CUSTOMERS = [];
 let RFV_CUSTOMERS = [];
 let rfvLoaded = false;
@@ -933,18 +960,26 @@ let activeSegment = null;
   document.getElementById('s-top-s').textContent = STATS.top10_pct+'% da receita';
   document.getElementById('genDate').textContent = 'Gerado em '+STATS.generated_at+' · '+fmtN(STATS.total_customers)+' clientes';
 
-  fetch('/api/crm/lite')
-    .then(r => r.json())
-    .then(data => {{
-      CUSTOMERS = data;
-      renderTable(data);
-      document.getElementById('loadingMsg').style.display = 'none';
-      document.getElementById('tbl').style.display = '';
-      document.getElementById('cnt').textContent = data.length + ' clientes';
-    }})
-    .catch(() => {{
-      document.getElementById('loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados.<br>Verifica se o servidor está a correr em localhost:5001</div>';
-    }});
+  if (CUSTOMERS_EMBEDDED && CUSTOMERS_EMBEDDED.length > 0) {{
+    CUSTOMERS = CUSTOMERS_EMBEDDED;
+    renderTable(CUSTOMERS_EMBEDDED);
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('tbl').style.display = '';
+    document.getElementById('cnt').textContent = CUSTOMERS_EMBEDDED.length + ' clientes';
+  }} else {{
+    fetch('/api/crm/lite')
+      .then(r => r.json())
+      .then(data => {{
+        CUSTOMERS = data;
+        renderTable(data);
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('tbl').style.display = '';
+        document.getElementById('cnt').textContent = data.length + ' clientes';
+      }})
+      .catch(() => {{
+        document.getElementById('loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados.<br>Verifica se o servidor está a correr em localhost:5001</div>';
+      }});
+  }}
 
   // Garante que os inputs de data disparam o filtro em qualquer browser
   ['dateFrom','dateTo'].forEach(id => {{
