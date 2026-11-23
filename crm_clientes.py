@@ -1102,36 +1102,41 @@ function pontosRenderTable(data) {{
 // ── RFV: Carregamento lazy ────────────────────────────────────────────────────
 function loadRFV() {{
   buildMatrix();
-  fetch('/api/crm/rfv')
-    .then(r => r.json())
-    .then(data => {{
-      RFV_CUSTOMERS = data;
-      rfvLoaded = true;
-      buildSegCards(data);
-      rfvRenderTable(data);
-      document.getElementById('rfv-loadingMsg').style.display = 'none';
-      document.getElementById('rfv-tbl').style.display = '';
-      document.getElementById('rfv-cnt').textContent = data.length + ' clientes';
-      const fmtN = n => n.toLocaleString('pt-PT');
-      const segCounts = {{}}, segRevenue = {{}};
-      data.forEach(c => {{
-        const s = c.rfv_segment || 'lost';
-        segCounts[s]  = (segCounts[s]||0) + 1;
-        segRevenue[s] = (segRevenue[s]||0) + c.total_spent;
-      }});
-      const champCount = (segCounts.champions||0) + (segCounts.loyal||0);
-      const riskCount  = (segCounts.at_risk||0)   + (segCounts.cant_lose||0);
-      const champPct   = data.length ? (champCount/data.length*100).toFixed(1) : 0;
-      const champRev   = Math.round(segRevenue.champions||0);
-      document.getElementById('rfv-s-total').textContent = fmtN(data.length);
-      document.getElementById('rfv-s-champ').textContent = fmtN(champCount);
-      document.getElementById('rfv-s-champ-s').textContent = champPct + '% do total';
-      document.getElementById('rfv-s-risk').textContent  = fmtN(riskCount);
-      document.getElementById('rfv-s-rev').textContent   = fmtN(champRev) + '€';
-    }})
-    .catch(() => {{
-      document.getElementById('rfv-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados RFV.</div>';
+  function processRfvData(data) {{
+    RFV_CUSTOMERS = data;
+    rfvLoaded = true;
+    buildSegCards(data);
+    rfvRenderTable(data);
+    document.getElementById('rfv-loadingMsg').style.display = 'none';
+    document.getElementById('rfv-tbl').style.display = '';
+    document.getElementById('rfv-cnt').textContent = data.length + ' clientes';
+    const fmtN = n => n.toLocaleString('pt-PT');
+    const segCounts = {{}}, segRevenue = {{}};
+    data.forEach(c => {{
+      const s = c.rfv_segment || 'lost';
+      segCounts[s]  = (segCounts[s]||0) + 1;
+      segRevenue[s] = (segRevenue[s]||0) + c.total_spent;
     }});
+    const champCount = (segCounts.champions||0) + (segCounts.loyal||0);
+    const riskCount  = (segCounts.at_risk||0)   + (segCounts.cant_lose||0);
+    const champPct   = data.length ? (champCount/data.length*100).toFixed(1) : 0;
+    const champRev   = Math.round(segRevenue.champions||0);
+    document.getElementById('rfv-s-total').textContent = fmtN(data.length);
+    document.getElementById('rfv-s-champ').textContent = fmtN(champCount);
+    document.getElementById('rfv-s-champ-s').textContent = champPct + '% do total';
+    document.getElementById('rfv-s-risk').textContent  = fmtN(riskCount);
+    document.getElementById('rfv-s-rev').textContent   = fmtN(champRev) + '€';
+  }}
+  if (CUSTOMERS_EMBEDDED && CUSTOMERS_EMBEDDED.length > 0) {{
+    processRfvData(CUSTOMERS_EMBEDDED);
+  }} else {{
+    fetch('/api/crm/rfv')
+      .then(r => r.json())
+      .then(processRfvData)
+      .catch(() => {{
+        document.getElementById('rfv-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados RFV.</div>';
+      }});
+  }}
 }}
 
 // ── RFV: Matriz ───────────────────────────────────────────────────────────────
@@ -1723,6 +1728,24 @@ def generate_rfv_html(customers, generated_at):
     seg_counts_json = json.dumps(dict(seg_counts))
     seg_revenue_json = json.dumps({k: round(v, 2) for k, v in seg_revenue.items()})
 
+    rfv_embedded = [{
+        "email":        c["email"],
+        "name":         c.get("name", ""),
+        "is_guest":     c.get("is_guest", True),
+        "city":         c.get("city", ""),
+        "region":       c.get("region", ""),
+        "total_orders": c["total_orders"],
+        "total_spent":  c["total_spent"],
+        "last_order":   c.get("last_order", ""),
+        "days_since":   c.get("days_since", ""),
+        "rfv_r":        c.get("rfv_r", 1),
+        "rfv_f":        c.get("rfv_f", 1),
+        "rfv_v":        c.get("rfv_v", 1),
+        "rfv_score":    c.get("rfv_score", 3),
+        "rfv_segment":  c.get("rfv_segment", "lost"),
+    } for c in customers]
+    customers_embedded_json = json.dumps(rfv_embedded, ensure_ascii=False, separators=(',', ':'))
+
     return f"""<!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -1895,6 +1918,7 @@ const SEGMENTS_META = {segments_meta_json};
 const SEG_COUNTS = {seg_counts_json};
 const SEG_REVENUE = {seg_revenue_json};
 const TOTAL_REVENUE = {round(total_revenue, 2)};
+const CUSTOMERS_EMBEDDED = {customers_embedded_json};
 const SEG_TABLE = {{
   '5_5':'champions','5_4':'champions','5_3':'loyal','5_2':'at_risk','5_1':'cant_lose',
   '4_5':'champions','4_4':'loyal','4_3':'loyal','4_2':'at_risk','4_1':'cant_lose',
@@ -2060,18 +2084,24 @@ function exportCSV() {{
 buildMatrix();
 buildSegCards();
 
-fetch('/api/crm/rfv')
-  .then(r => r.json())
-  .then(data => {{
-    CUSTOMERS = data;
-    renderTable(data);
-    document.getElementById('loadingMsg').style.display = 'none';
-    document.getElementById('tbl').style.display = '';
-    document.getElementById('cnt').textContent = data.length+' clientes';
-  }})
-  .catch(e => {{
-    document.getElementById('loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados. Verifica se o servidor está a correr em localhost:5001</div>';
-  }});
+function loadRfvData(data) {{
+  CUSTOMERS = data;
+  renderTable(data);
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.getElementById('tbl').style.display = '';
+  document.getElementById('cnt').textContent = data.length+' clientes';
+}}
+
+if (typeof CUSTOMERS_EMBEDDED !== 'undefined' && CUSTOMERS_EMBEDDED.length > 0) {{
+  loadRfvData(CUSTOMERS_EMBEDDED);
+}} else {{
+  fetch('/api/crm/rfv')
+    .then(r => r.json())
+    .then(loadRfvData)
+    .catch(e => {{
+      document.getElementById('loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados. Verifica se o servidor está a correr em localhost:5001</div>';
+    }});
+}}
 </script>
 </body>
 </html>"""

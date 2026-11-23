@@ -212,7 +212,7 @@ thead th.sorted{color:var(--gold);}
 
 <header>
   <div class="logo">CAVEMEN <span>· CRM</span></div>
-  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 23/11/2026 11:47 · 5,672 clientes</div>
+  <div class="gen" id="genDate" style="margin-left:16px;">Gerado em 23/11/2026 11:59 · 5,672 clientes</div>
   <div style="display:flex;gap:8px;margin-left:auto;">
     <button class="refresh-btn" id="btnRefresh" onclick="refreshCRM(false)" title="Atualiza usando cache (rápido)">↻ Atualizar</button>
     <button class="refresh-btn refresh-full" id="btnFull" onclick="refreshCRM(true)" title="Vai buscar dados novos ao Magento (~2 min)">⬇ Dados Novos</button>
@@ -505,7 +505,7 @@ thead th.sorted{color:var(--gold);}
 </div>
 
 <script>
-const STATS = {"total_customers": 5672, "total_revenue": 907423.0, "total_orders": 10911, "avg_order": 83.17, "recurring": 2057, "top10_revenue": 27650.0, "top10_pct": 3.0, "recurring_pct": 36.0, "generated_at": "23/11/2026 11:47"};
+const STATS = {"total_customers": 5672, "total_revenue": 907423.0, "total_orders": 10911, "avg_order": 83.17, "recurring": 2057, "top10_revenue": 27650.0, "top10_pct": 3.0, "recurring_pct": 36.0, "generated_at": "23/11/2026 11:59"};
 const STATUS_COLORS = {"complete": "#4caf89", "processing": "#5b9bd5", "closed": "#888", "canceled": "#e05454", "pending": "#f0a732", "holded": "#888", "pending_payment": "#f0a732"};
 const STATUS_LABELS = {"complete": "Completa", "processing": "Em processo", "closed": "Fechada", "canceled": "Cancelada", "pending": "Pendente", "holded": "Em espera", "pending_payment": "Pag. pendente"};
 const MATRIX_DATA = {"5_4": 23, "4_4": 42, "5_2": 25, "5_5": 12, "5_3": 17, "4_3": 39, "3_4": 64, "4_5": 24, "5_1": 6, "3_1": 338, "3_2": 169, "3_3": 51, "4_1": 97, "4_2": 105, "2_1": 720, "1_1": 2859, "2_5": 36, "1_3": 154, "2_3": 60, "2_2": 158, "1_2": 441, "3_5": 28, "1_4": 89, "2_4": 43, "1_5": 72};
@@ -673,36 +673,41 @@ function pontosRenderTable(data) {
 // ── RFV: Carregamento lazy ────────────────────────────────────────────────────
 function loadRFV() {
   buildMatrix();
-  fetch('/api/crm/rfv')
-    .then(r => r.json())
-    .then(data => {
-      RFV_CUSTOMERS = data;
-      rfvLoaded = true;
-      buildSegCards(data);
-      rfvRenderTable(data);
-      document.getElementById('rfv-loadingMsg').style.display = 'none';
-      document.getElementById('rfv-tbl').style.display = '';
-      document.getElementById('rfv-cnt').textContent = data.length + ' clientes';
-      const fmtN = n => n.toLocaleString('pt-PT');
-      const segCounts = {}, segRevenue = {};
-      data.forEach(c => {
-        const s = c.rfv_segment || 'lost';
-        segCounts[s]  = (segCounts[s]||0) + 1;
-        segRevenue[s] = (segRevenue[s]||0) + c.total_spent;
-      });
-      const champCount = (segCounts.champions||0) + (segCounts.loyal||0);
-      const riskCount  = (segCounts.at_risk||0)   + (segCounts.cant_lose||0);
-      const champPct   = data.length ? (champCount/data.length*100).toFixed(1) : 0;
-      const champRev   = Math.round(segRevenue.champions||0);
-      document.getElementById('rfv-s-total').textContent = fmtN(data.length);
-      document.getElementById('rfv-s-champ').textContent = fmtN(champCount);
-      document.getElementById('rfv-s-champ-s').textContent = champPct + '% do total';
-      document.getElementById('rfv-s-risk').textContent  = fmtN(riskCount);
-      document.getElementById('rfv-s-rev').textContent   = fmtN(champRev) + '€';
-    })
-    .catch(() => {
-      document.getElementById('rfv-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados RFV.</div>';
+  function processRfvData(data) {
+    RFV_CUSTOMERS = data;
+    rfvLoaded = true;
+    buildSegCards(data);
+    rfvRenderTable(data);
+    document.getElementById('rfv-loadingMsg').style.display = 'none';
+    document.getElementById('rfv-tbl').style.display = '';
+    document.getElementById('rfv-cnt').textContent = data.length + ' clientes';
+    const fmtN = n => n.toLocaleString('pt-PT');
+    const segCounts = {}, segRevenue = {};
+    data.forEach(c => {
+      const s = c.rfv_segment || 'lost';
+      segCounts[s]  = (segCounts[s]||0) + 1;
+      segRevenue[s] = (segRevenue[s]||0) + c.total_spent;
     });
+    const champCount = (segCounts.champions||0) + (segCounts.loyal||0);
+    const riskCount  = (segCounts.at_risk||0)   + (segCounts.cant_lose||0);
+    const champPct   = data.length ? (champCount/data.length*100).toFixed(1) : 0;
+    const champRev   = Math.round(segRevenue.champions||0);
+    document.getElementById('rfv-s-total').textContent = fmtN(data.length);
+    document.getElementById('rfv-s-champ').textContent = fmtN(champCount);
+    document.getElementById('rfv-s-champ-s').textContent = champPct + '% do total';
+    document.getElementById('rfv-s-risk').textContent  = fmtN(riskCount);
+    document.getElementById('rfv-s-rev').textContent   = fmtN(champRev) + '€';
+  }
+  if (CUSTOMERS_EMBEDDED && CUSTOMERS_EMBEDDED.length > 0) {
+    processRfvData(CUSTOMERS_EMBEDDED);
+  } else {
+    fetch('/api/crm/rfv')
+      .then(r => r.json())
+      .then(processRfvData)
+      .catch(() => {
+        document.getElementById('rfv-loadingMsg').innerHTML = '<div style="color:var(--red)">Erro ao carregar dados RFV.</div>';
+      });
+  }
 }
 
 // ── RFV: Matriz ───────────────────────────────────────────────────────────────
